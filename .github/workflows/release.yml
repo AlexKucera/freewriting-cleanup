@@ -1,0 +1,153 @@
+name: Release Obsidian Plugin
+
+on:
+  push:
+    tags:
+      # Trigger on version tags without 'v' prefix (Obsidian format)
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+-*'
+
+env:
+  PLUGIN_NAME: freewriting-cleanup
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Create package script
+        run: |
+          cat > package-plugin.js << 'EOF'
+          const fs = require('fs');
+          const path = require('path');
+          const archiver = require('archiver');
+
+          const pluginName = process.env.PLUGIN_NAME || 'freewriting-cleanup';
+          const outputPath = `${pluginName}.zip`;
+
+          console.log(`Creating release package: ${outputPath}`);
+
+          const output = fs.createWriteStream(outputPath);
+          const archive = archiver('zip', {
+            zlib: { level: 9 }
+          });
+
+          output.on('close', () => {
+            console.log(`Package created: ${archive.pointer()} total bytes`);
+            console.log('Files included in package:');
+            console.log('- main.js');
+            console.log('- manifest.json');
+            console.log('- styles.css');
+          });
+
+          archive.on('error', (err) => {
+            throw err;
+          });
+
+          archive.pipe(output);
+
+          // Add required files
+          archive.file('main.js', { name: 'main.js' });
+          archive.file('manifest.json', { name: 'manifest.json' });
+
+          // Add styles.css if it exists
+          if (fs.existsSync('styles.css')) {
+            archive.file('styles.css', { name: 'styles.css' });
+          }
+
+          archive.finalize();
+          EOF
+
+      - name: Install archiver for packaging
+        run: npm install archiver
+
+      - name: Create release package
+        run: node package-plugin.js
+
+      - name: Get version from manifest
+        id: version
+        run: |
+          VERSION=$(node -p "require('./manifest.json').version")
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Get changelog for this version
+        id: changelog
+        run: |
+          # Try to extract changelog section for this version
+          VERSION="${{ steps.version.outputs.version }}"
+          if [ -f "CHANGELOG.md" ]; then
+            # Extract section between this version and next version/end of file
+            CHANGELOG=$(awk "/^## \\[?${VERSION}\\]?|^## ${VERSION}[ ,-]/{flag=1; next} /^## \\[?[0-9]+\\.[0-9]+\\.[0-9]+\\]?|^## [0-9]+\\.[0-9]+\\.[0-9]+[ ,-]/{if(flag) exit} flag" CHANGELOG.md | sed '/^$/N;/^\n$/d')
+            if [ -n "$CHANGELOG" ]; then
+              echo "changelog<<EOF" >> $GITHUB_OUTPUT
+              echo "$CHANGELOG" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            else
+              echo "changelog=Release version $VERSION" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "changelog=Release version $VERSION" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ steps.version.outputs.version }}
+          body: |
+            # Freewriting Cleanup ${{ steps.version.outputs.version }}
+
+            ${{ steps.changelog.outputs.changelog }}
+
+            ## Installation
+
+            ### Automatic Installation (Community Plugins)
+            Search for "Freewriting Cleanup" in Obsidian's Community Plugins tab.
+
+            ### BRAT (Beta Reviewer's Auto-update Tool)
+
+            1. Install the [BRAT plugin](https://github.com/TfTHacker/obsidian42-brat)
+            2. Add this repository: `alexanderkucera/obsidian-freewriting-cleanup`
+            3. Enable the plugin after installation
+
+            ### Manual Installation
+            1. Download the `${{ env.PLUGIN_NAME }}.zip` file from this release
+            2. Extract the ZIP file to your vault's plugins directory: `VaultFolder/.obsidian/plugins/freewriting-cleanup/`
+            3. Reload Obsidian
+            4. Enable the plugin in Settings → Community Plugins
+
+            ### Requirements
+            - Valid Anthropic API key (get one at [console.anthropic.com](https://console.anthropic.com/))
+
+            ## Files in this release
+            - `main.js` - Plugin code
+            - `manifest.json` - Plugin metadata
+            - `styles.css` - Plugin styles
+            - `${{ env.PLUGIN_NAME }}.zip` - Complete package for manual installation
+          draft: false
+          prerelease: false
+          files: |
+            main.js
+            manifest.json
+            styles.css
+            ${{ env.PLUGIN_NAME }}.zip
