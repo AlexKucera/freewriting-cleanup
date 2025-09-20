@@ -22,3 +22,5 @@ data.json
 .DS_Store
 
 logs/stack-exchange-mcp-server.log
+
+freewriting-cleanup.sublime-workspace
