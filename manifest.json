@@ -1,11 +1,15 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "freewriting-cleanup",
+	"name": "Freewriting Cleanup",
 	"version": "1.0.0",
-	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"minAppVersion": "1.9.12",
+	"description": "Use AI to clean up your freewriting typos and create a proper paragraph.",
+	"author": "Alexander Kucera",
+	"authorUrl": "https://alexanderkucera.com",
+	"fundingUrl": {
+		"Buy Me a Coffee": "https://buymeacoffee.com/babylondreams",
+		"Ko-fi": "https://ko-fi.com/babylondreams",
+		"Patreon": "https://patreon.com/babylondreams"
+	},
 	"isDesktopOnly": false
 }
