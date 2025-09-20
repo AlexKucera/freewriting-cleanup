@@ -49,8 +49,8 @@ export default class FreewritingCleanupPlugin extends Plugin {
 
     private registerCommand() {
         this.addCommand({
-            id: 'cleanup-freewriting',
-            name: 'Clean Up Freewriting',
+            id: 'cleanup-text',
+            name: 'Clean up text',
             editorCallback: async (editor: Editor, view: MarkdownView) => {
                 await this.executeCleanupCommand(editor, view);
             }

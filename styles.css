@@ -1,8 +1,21 @@
-/*
+/* Freewriting Cleanup Plugin Styles */
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+/* Settings page textarea styling */
+.freewriting-cleanup-textarea {
+    width: 100% !important;
+    min-height: 100px !important;
+}
 
-If your plugin does not need CSS, delete this file.
+.freewriting-cleanup-textarea-small {
+    width: 100% !important;
+    min-height: 80px !important;
+}
 
-*/
+/* Commentary style description box */
+.freewriting-cleanup-description {
+    margin-left: 0 !important;
+    padding: 10px !important;
+    background-color: var(--background-secondary) !important;
+    border-radius: 5px !important;
+    font-size: 0.9em !important;
+}

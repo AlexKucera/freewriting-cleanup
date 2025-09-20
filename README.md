@@ -1,7 +1,7 @@
 # Freewriting Cleanup
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/alexanderkucera/obsidian-freewriting-cleanup)](https://github.com/alexanderkucera/obsidian-freewriting-cleanup/releases)
-[![License: MIT](https://img.shields.io/github/license/alexanderkucera/obsidian-freewriting-cleanup?color=yellow)](https://opensource.org/licenses/MIT)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 ![](https://img.shields.io/badge/mobile_supported-green?label=obsidian&labelColor=purple)
 
 Transform your messy freewriting into polished prose using AI. Clean up typos, improve grammar, and format your stream-of-consciousness writing into readable paragraphs with a single command.
@@ -105,7 +105,7 @@ Write without the ability to delete or edit - just like pen on paper. Perfect fo
 ### 3. Clean Up Your Writing
 
 1. **Select** the freewriting text you want to clean up
-2. Use `Ctrl/Cmd + P` → "Clean Up Freewriting"
+2. Use `Ctrl/Cmd + P` → "Clean up text"
 3. The selected text will be replaced with the cleaned-up version
 4. Review and make any final adjustments
 
@@ -144,7 +144,7 @@ Write without the ability to delete or edit - just like pen on paper. Perfect fo
 
 ## Commands
 
-### Clean Up Freewriting
+### Clean up text
 
 The main command that transforms your selected text:
 
@@ -287,7 +287,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
 ## Support
 

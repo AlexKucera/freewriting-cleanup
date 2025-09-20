@@ -90,8 +90,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
 
                 // Style the textarea
                 textArea.inputEl.rows = 4;
-                textArea.inputEl.style.width = '100%';
-                textArea.inputEl.style.minHeight = '100px';
+                textArea.inputEl.addClass('freewriting-cleanup-textarea');
             });
 
         // MARK: - Commentary Configuration
@@ -142,18 +141,12 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
 
                         // Style the textarea
                         textArea.inputEl.rows = 3;
-                        textArea.inputEl.style.width = '100%';
-                        textArea.inputEl.style.minHeight = '80px';
+                        textArea.inputEl.addClass('freewriting-cleanup-textarea-small');
                     });
             } else {
                 // Show the current preset for reference
                 const presetText = COMMENTARY_PRESETS[this.plugin.settings.commentaryStyle as Exclude<CommentaryStyle, 'custom'>];
-                const descDiv = containerEl.createDiv({ cls: 'setting-item-description' });
-                descDiv.style.marginLeft = '0';
-                descDiv.style.padding = '10px';
-                descDiv.style.backgroundColor = 'var(--background-secondary)';
-                descDiv.style.borderRadius = '5px';
-                descDiv.style.fontSize = '0.9em';
+                const descDiv = containerEl.createDiv({ cls: 'setting-item-description freewriting-cleanup-description' });
                 descDiv.innerHTML = `<strong>Selected style:</strong> ${presetText}`;
             }
         }
