@@ -1,7 +1,7 @@
 {
 	"id": "freewriting-cleanup",
 	"name": "Freewriting Cleanup",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"minAppVersion": "1.9.12",
 	"description": "Use AI to clean up your freewriting typos and create a proper paragraph.",
 	"author": "Alexander Kucera",

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2025-09-20
+
+### Changed
+- Command name updated from "Clean Up Freewriting" to "Clean up text" (follows Obsidian guidelines)
+- Replaced inline JavaScript styles with CSS classes for better theme compatibility
+- License information corrected in package.json to match GPL-3.0
+
+### Fixed
+- License badge and documentation now correctly show GPL v3 instead of MIT
+
 ## [1.0.0] - 2025-09-20
 
 ### Added
@@ -21,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Analytical**: Analysis of writing structure, themes, and thought patterns
   - **Brief**: 2-3 concise but insightful observations
   - **Custom**: Use your own prompt for personalized feedback
-- **Command**: "Clean Up Freewriting" command accessible via Command Palette
+- **Command**: "Clean up text" command accessible via Command Palette
 - **Settings Configuration**:
   - Anthropic API key configuration
   - Model selection (supports all Claude models)
@@ -41,5 +51,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Settings Management**: Persistent settings with validation and testing capabilities
 - **Modular Architecture**: Clean separation of concerns across services, commands, and API layers
 
-[Unreleased]: https://github.com/alexanderkucera/obsidian-freewriting-cleanup/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/alexanderkucera/obsidian-freewriting-cleanup/releases/tag/v1.0.0
+[Unreleased]: https://github.com/alexanderkucera/obsidian-freewriting-cleanup/compare/1.0.1...HEAD
+[1.0.1]: https://github.com/alexanderkucera/obsidian-freewriting-cleanup/compare/1.0.0...1.0.1
+[1.0.0]: https://github.com/alexanderkucera/obsidian-freewriting-cleanup/releases/tag/1.0.0

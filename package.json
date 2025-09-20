@@ -1,6 +1,6 @@
 {
 	"name": "freewriting-cleanup",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Use AI to clean up your freewriting typos and create a proper paragraph.",
 	"main": "main.js",
 	"scripts": {
@@ -10,7 +10,7 @@
 	},
 	"keywords": ["obsidian", "plugin", "ai", "writing", "cleanup", "anthropic", "claude"],
 	"author": "Alexander Kucera",
-	"license": "MIT",
+	"license": "GPL-3.0",
 	"devDependencies": {
 		"@types/node": "^16.11.6",
 		"@typescript-eslint/eslint-plugin": "5.29.0",
