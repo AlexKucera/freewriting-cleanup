@@ -147,7 +147,9 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
                 // Show the current preset for reference
                 const presetText = COMMENTARY_PRESETS[this.plugin.settings.commentaryStyle as Exclude<CommentaryStyle, 'custom'>];
                 const descDiv = containerEl.createDiv({ cls: 'setting-item-description freewriting-cleanup-description' });
-                descDiv.innerHTML = `<strong>Selected style:</strong> ${presetText}`;
+                descDiv.empty();
+                descDiv.createEl('strong', { text: 'Selected style: ' });
+                descDiv.appendText(presetText);
             }
         }
 
@@ -156,16 +158,23 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
         containerEl.createEl('h3', { text: 'Usage Information' });
 
         const usageDiv = containerEl.createDiv();
-        usageDiv.innerHTML = `
-            <p><strong>How to use:</strong></p>
-            <ol>
-                <li>Select the text you want to clean up in any note</li>
-                <li>Run the "Clean Up Freewriting" command (Ctrl/Cmd+P)</li>
-                <li>The cleaned text will appear below your original text</li>
-            </ol>
-            <p><strong>Limits:</strong> Maximum 680,000 characters (~150,000 words) per cleanup</p>
-            <p><strong>Format:</strong> Original text → separator → cleaned text</p>
-        `;
+        usageDiv.empty();
+
+        const howToUse = usageDiv.createEl('p');
+        howToUse.createEl('strong', { text: 'How to use:' });
+
+        const list = usageDiv.createEl('ol');
+        list.createEl('li', { text: 'Select the text you want to clean up in any note' });
+        list.createEl('li', { text: 'Run the "Clean Up Freewriting" command (Ctrl/Cmd+P)' });
+        list.createEl('li', { text: 'The cleaned text will appear below your original text' });
+
+        const limits = usageDiv.createEl('p');
+        limits.createEl('strong', { text: 'Limits: ' });
+        limits.appendText('Maximum 680,000 characters (~150,000 words) per cleanup');
+
+        const format = usageDiv.createEl('p');
+        format.createEl('strong', { text: 'Format: ' });
+        format.appendText('Original text → separator → cleaned text');
 
         // MARK: - Reset Settings
 
