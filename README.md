@@ -1,7 +1,8 @@
 # Freewriting Cleanup
 
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/alexanderkucera/obsidian-freewriting-cleanup)](https://github.com/alexanderkucera/obsidian-freewriting-cleanup/releases)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/AlexKucera/freewriting-cleanup?color=blue)](https://github.com/AlexKucera/freewriting-cleanup/releases)
+[![License: MIT](https://img.shields.io/github/license/AlexKucera/freewriting-cleanup?color=yellow)](https://opensource.org/licenses/MIT)
+[![Obsidian Downloads](https://img.shields.io/github/downloads/AlexKucera/freewriting-cleanup/total?color=green)](https://obsidian.md/plugins?id=freewriting-cleanup)
 ![](https://img.shields.io/badge/mobile_supported-green?label=obsidian&labelColor=purple)
 
 Transform your messy freewriting into polished prose using AI. Clean up typos, improve grammar, and format your stream-of-consciousness writing into readable paragraphs with a single command.
