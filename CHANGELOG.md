@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2025-01-21
+
+### Security
+- Fix innerHTML usage in settings to prevent XSS vulnerabilities
+- Replace innerHTML with safe DOM manipulation methods (createEl, appendText)
+- Comply with Obsidian security guidelines for plugin development
+
 ## [1.0.1] - 2025-09-20
 
 ### Changed
@@ -51,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Settings Management**: Persistent settings with validation and testing capabilities
 - **Modular Architecture**: Clean separation of concerns across services, commands, and API layers
 
-[Unreleased]: https://github.com/alexanderkucera/obsidian-freewriting-cleanup/compare/1.0.1...HEAD
+[Unreleased]: https://github.com/alexanderkucera/obsidian-freewriting-cleanup/compare/1.0.2...HEAD
+[1.0.2]: https://github.com/alexanderkucera/obsidian-freewriting-cleanup/compare/1.0.1...1.0.2
 [1.0.1]: https://github.com/alexanderkucera/obsidian-freewriting-cleanup/compare/1.0.0...1.0.1
 [1.0.0]: https://github.com/alexanderkucera/obsidian-freewriting-cleanup/releases/tag/1.0.0
