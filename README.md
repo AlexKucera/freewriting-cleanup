@@ -3,7 +3,7 @@
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/AlexKucera/freewriting-cleanup?color=blue)](https://github.com/AlexKucera/freewriting-cleanup/releases)
 [![License: MIT](https://img.shields.io/github/license/AlexKucera/freewriting-cleanup?color=yellow)](https://opensource.org/licenses/MIT)
 [![ownloads](https://img.shields.io/github/downloads/AlexKucera/freewriting-cleanup/total?color=green)](https://github.com/AlexKucera/freewriting-cleanup/releases)
-[![CodeRabbit Reviews](https://img.shields.io/coderabbit/prs/github/AlexKucera/freewriting-cleanup](https://coderabbit.ai/)
+[![CodeRabbit Reviews](https://img.shields.io/coderabbit/prs/github/AlexKucera/freewriting-cleanup)](https://coderabbit.ai/)
 ![](https://img.shields.io/badge/mobile_supported-green?label=obsidian&labelColor=purple)
 
 Transform your messy freewriting into polished prose using AI. Clean up typos, improve grammar, and format your stream-of-consciousness writing into readable paragraphs with a single command.
