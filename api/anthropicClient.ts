@@ -69,8 +69,8 @@ You MUST use exactly these markers. Do not deviate from this format.`;
         const request: AnthropicRequest = {
             model,
             max_tokens: ANTHROPIC_LIMITS.DEFAULT_MAX_OUTPUT_TOKENS,
-            messages: [{ role: 'user', content: userMessage }],
-            system: systemPrompt
+            messages: [{ role: 'user', content: [{ type: 'text', text: userMessage }] }],
+            system: [{ type: 'text', text: systemPrompt }]
         };
 
         const response = await this.makeRequestWithRetry(request);
@@ -100,8 +100,8 @@ You MUST use exactly these markers. Do not deviate from this format.`;
         const testRequest: AnthropicRequest = {
             model,
             max_tokens: 50,
-            messages: [{ role: 'user', content: 'Hello! Please respond with just "Test successful."' }],
-            system: 'You are a test assistant. Respond only with "Test successful." and nothing else.'
+            messages: [{ role: 'user', content: [{ type: 'text', text: 'Hello! Please respond with just "Test successful."' }] }],
+            system: [{ type: 'text', text: 'You are a test assistant. Respond only with "Test successful." and nothing else.' }]
         };
 
         try {
