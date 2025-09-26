@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.2] - 2025-01-21
+## [1.0.2] - 2025-09-21
 
 ### Security
 - Fix innerHTML usage in settings to prevent XSS vulnerabilities

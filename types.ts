@@ -12,14 +12,20 @@ export interface FreewritingCleanupSettings {
 
 export interface AnthropicMessage {
     role: 'user' | 'assistant' | 'system';
-    content: string;
+    content: Array<{
+        type: string;
+        text: string;
+    }>;
 }
 
 export interface AnthropicRequest {
     model: string;
     max_tokens: number;
     messages: AnthropicMessage[];
-    system?: string;
+    system?: Array<{
+        type: string;
+        text: string;
+    }>;
 }
 
 export interface AnthropicResponse {

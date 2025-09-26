@@ -24,10 +24,10 @@ export class CleanupCommand {
                 return;
             }
 
-            // Validate text length before proceeding
-            const limits = CleanupService.isWithinLimits(selectedText);
-            if (!limits.withinCharacterLimit) {
-                new Notice(`Selected text is too long (${limits.characterCount} characters). Maximum: 680,000 characters.`);
+            // Validate text selection before proceeding
+            const validation = this.validateSelection(selectedText);
+            if (!validation.isValid) {
+                new Notice(validation.error || 'Invalid text selection');
                 return;
             }
 
@@ -87,19 +87,6 @@ export class CleanupCommand {
 
     // MARK: - Helper Methods
 
-    private getInsertionPosition(editor: Editor): { line: number; ch: number } {
-        const selection = editor.listSelections()[0];
-        if (selection) {
-            // Insert after the selection
-            return {
-                line: selection.head.line,
-                ch: editor.getLine(selection.head.line).length
-            };
-        }
-
-        // Fallback to current cursor position
-        return editor.getCursor();
-    }
 
     private formatSelectedTextInfo(text: string): string {
         const characterCount = text.length;

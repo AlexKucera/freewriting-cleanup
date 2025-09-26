@@ -48,15 +48,20 @@ Manual testing requires copying build artifacts (`main.js`, `manifest.json`, `st
 - **Production**: Minified output without sourcemaps
 
 ### Plugin Structure
-The plugin follows Obsidian's standard plugin architecture:
-- **Main Plugin Class**: `MyPlugin` extends `Plugin` from obsidian API
+The plugin follows a modular architecture extending Obsidian's standard plugin system:
+- **Main Plugin Class**: `FreewritingCleanupPlugin` extends `Plugin` from obsidian API
+- **Service Layer**: `CleanupService` handles AI API interactions
+- **Command Layer**: `CleanupCommand` implements text processing logic
 - **Settings System**: Interface-based settings with persistence via `loadData()`/`saveData()`
-- **Commands**: Registered via `addCommand()` with unique IDs
-- **UI Components**: Modal and settings tab classes
-- **Lifecycle Management**: Uses `registerDomEvent()`, `registerInterval()` for cleanup
+- **Type Definitions**: Centralized in `types.ts` for consistency
+- **Lifecycle Management**: Uses proper initialization and cleanup patterns
 
 ### Key Files
-- `main.ts`: Plugin entry point containing all core functionality
+- `main.ts`: Plugin entry point coordinating services and commands
+- `types.ts`: TypeScript interfaces for settings, API responses, and plugin configuration
+- `settings.ts`: Settings tab implementation and default configuration
+- `services/cleanupService.ts`: AI service integration and API handling
+- `commands/cleanupCommand.ts`: Command execution and text processing
 - `manifest.json`: Plugin metadata (ID, version, compatibility)
 - `package.json`: npm configuration with build scripts
 - `esbuild.config.mjs`: Build configuration
@@ -66,33 +71,48 @@ The plugin follows Obsidian's standard plugin architecture:
 ## Plugin Architecture Patterns
 
 ### Settings Management
-Settings are defined as TypeScript interfaces with default values and persisted automatically:
+Settings use the `FreewritingCleanupSettings` interface with modular defaults:
 ```typescript
-interface MyPluginSettings {
-    mySetting: string;
+interface FreewritingCleanupSettings {
+    apiKey: string;
+    model: AnthropicModel;
+    cleanupPrompt: string;
+    enableCommentary: boolean;
+    commentaryStyle: CommentaryStyle;
+    customCommentaryPrompt: string;
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
-    mySetting: 'default'
+const DEFAULT_SETTINGS: FreewritingCleanupSettings = {
+    apiKey: '',
+    model: 'claude-3-5-haiku-latest',
+    cleanupPrompt: 'I did some free writing. Please correct my jumbled typo mess...',
+    enableCommentary: false,
+    commentaryStyle: 'constructive',
+    customCommentaryPrompt: 'Provide thoughtful feedback...'
 }
 ```
 
 ### Command Registration
-Commands should have stable IDs and descriptive names:
-- Use `addCommand()` for simple commands
-- Use `editorCallback` for editor-specific commands
-- Use `checkCallback` for conditional commands
+Commands use dedicated command classes with service injection:
+- Main plugin registers commands via `addCommand()` with stable IDs
+- `CleanupCommand` class handles execution logic and editor interaction
+- Service dependencies injected during plugin initialization
+
+### Service Architecture
+- `CleanupService` manages Anthropic API integration and connection testing
+- Service instances created during plugin load and updated when settings change
+- Clean separation between API logic and UI components
 
 ### UI Components
-- Modals extend `Modal` class with `onOpen()`/`onClose()` lifecycle
-- Settings tabs extend `PluginSettingTab` with `display()` method
-- Use Obsidian's `Setting` class for form controls
+- `FreewritingCleanupSettingTab` extends `PluginSettingTab` with comprehensive configuration
+- Custom confirmation modal for destructive operations
+- Dynamic UI updates based on setting states (e.g., commentary options)
 
 ### Resource Cleanup
-Critical for plugin stability:
-- Use `registerDomEvent()` for DOM listeners
-- Use `registerInterval()` for timers
-- Use `registerEvent()` for Obsidian app events
+Standard Obsidian plugin lifecycle with service coordination:
+- Services initialized in `onload()` with proper dependency injection
+- Settings persistence triggers service updates automatically
+- Clean separation allows for easy testing and maintenance
 
 ## Release Process
 1. Update `manifest.json` version (semantic versioning)
@@ -102,7 +122,8 @@ Critical for plugin stability:
 5. Attach `manifest.json`, `main.js`, and `styles.css` as release assets
 
 ## Development Notes
-- This is currently the default Obsidian sample plugin template
-- All functionality is in `main.ts` - consider splitting into modules for real development
-- Plugin demonstrates ribbon icons, status bar, commands, modals, and settings
+- Plugin uses modular architecture with separate services, commands, and settings
+- Build process bundles all TypeScript modules into single `main.js` artifact
+- Service layer enables clean testing and API interaction separation
+- Settings system provides comprehensive user configuration with dynamic UI updates
 - Mobile compatibility controlled by `isDesktopOnly` flag in manifest
