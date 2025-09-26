@@ -254,7 +254,7 @@ class ConfirmModal {
     private title: string;
     private message: string;
     private callback: (result: boolean) => void;
-    private modalEl: HTMLElement;
+    private modalEl: HTMLElement | null = null;
 
     constructor(app: App, title: string, message: string, callback: (result: boolean) => void) {
         this.app = app;
@@ -284,7 +284,9 @@ class ConfirmModal {
         const confirmButton = buttons.createEl('button', { text: 'Confirm', cls: 'mod-warning' });
         confirmButton.onclick = () => this.close(true);
 
-        document.body.appendChild(this.modalEl);
+        if (this.modalEl) {
+            document.body.appendChild(this.modalEl);
+        }
         confirmButton.focus();
     }
 
@@ -292,6 +294,7 @@ class ConfirmModal {
         if (this.modalEl && this.modalEl.parentNode) {
             this.modalEl.parentNode.removeChild(this.modalEl);
         }
+        this.modalEl = null;
         this.callback(result);
     }
 }
