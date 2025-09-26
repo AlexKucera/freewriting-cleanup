@@ -1,7 +1,7 @@
 # Freewriting Cleanup
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/AlexKucera/freewriting-cleanup?color=blue)](https://github.com/AlexKucera/freewriting-cleanup/releases)
-[![License: MIT](https://img.shields.io/github/license/AlexKucera/freewriting-cleanup?color=yellow)](https://opensource.org/licenses/MIT)
+[![License: GPL v3](https://img.shields.io/github/license/AlexKucera/freewriting-cleanup?color=yellow)](https://www.gnu.org/licenses/gpl-3.0)
 [![Downloads](https://img.shields.io/github/downloads/AlexKucera/freewriting-cleanup/total?color=green)](https://github.com/AlexKucera/freewriting-cleanup/releases)
 [![CodeRabbit Reviews](https://img.shields.io/coderabbit/prs/github/AlexKucera/freewriting-cleanup)](https://coderabbit.ai/)
 ![](https://img.shields.io/badge/mobile_supported-green?label=obsidian&labelColor=purple)
