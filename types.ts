@@ -3,11 +3,15 @@
 
 export interface FreewritingCleanupSettings {
     apiKey: string;
-    model: AnthropicModel;
+    model: string; // Changed from AnthropicModel to string to support dynamic models
     cleanupPrompt: string;
     enableCommentary: boolean;
     commentaryStyle: CommentaryStyle;
     customCommentaryPrompt: string;
+}
+
+export interface FreewritingCleanupData extends FreewritingCleanupSettings {
+    modelCache?: ModelCache;
 }
 
 export interface AnthropicMessage {
@@ -55,6 +59,25 @@ export interface CleanupResult {
         input: number;
         output: number;
     };
+}
+
+export interface ModelInfo {
+    id: string;
+    display_name?: string;
+    created_at: string;
+    type: string;
+}
+
+export interface ModelsListResponse {
+    data: ModelInfo[];
+    first_id: string;
+    has_more: boolean;
+    last_id: string;
+}
+
+export interface ModelCache {
+    models: ModelInfo[];
+    fetchedAt: number;
 }
 
 export const ANTHROPIC_MODELS = [

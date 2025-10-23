@@ -2,11 +2,12 @@
 // ABOUTME: Handles API requests, error handling, retry logic, and response parsing
 
 import { requestUrl } from 'obsidian';
-import { AnthropicRequest, AnthropicResponse, AnthropicModel, ANTHROPIC_LIMITS, CommentaryStyle, COMMENTARY_PRESETS } from '../types';
+import { AnthropicRequest, AnthropicResponse, ANTHROPIC_LIMITS, CommentaryStyle, COMMENTARY_PRESETS, ModelsListResponse } from '../types';
 
 export class AnthropicClient {
     private apiKey: string;
-    private baseUrl = 'https://api.anthropic.com/v1/messages';
+    private messagesUrl = 'https://api.anthropic.com/v1/messages';
+    private modelsUrl = 'https://api.anthropic.com/v1/models';
     private readonly MAX_RETRIES = 3;
     private readonly RETRY_DELAY_BASE = 1000; // 1 second base delay
 
@@ -18,7 +19,7 @@ export class AnthropicClient {
 
     async cleanupText(
         text: string,
-        model: AnthropicModel,
+        model: string,
         cleanupPrompt: string,
         enableCommentary = false,
         commentaryStyle: CommentaryStyle = 'constructive',
@@ -77,7 +78,7 @@ You MUST use exactly these markers. Do not deviate from this format.`;
         return this.parseStructuredResponse(response, enableCommentary);
     }
 
-    async testConnection(model: AnthropicModel): Promise<{
+    async testConnection(model: string): Promise<{
         success: boolean;
         message: string;
         details?: {
@@ -174,10 +175,38 @@ You MUST use exactly these markers. Do not deviate from this format.`;
         return { cleanedText, commentary };
     }
 
+    async fetchModels(): Promise<ModelsListResponse> {
+        if (!this.apiKey) {
+            throw new Error('API key is required');
+        }
+
+        try {
+            const response = await requestUrl({
+                url: this.modelsUrl,
+                method: 'GET',
+                headers: {
+                    'x-api-key': this.apiKey,
+                    'anthropic-version': '2023-06-01'
+                }
+            });
+
+            if (response.status < 200 || response.status >= 300) {
+                throw new Error(`Models API request failed: ${response.status}\n${response.text}`);
+            }
+
+            return response.json as ModelsListResponse;
+        } catch (error) {
+            if (error instanceof Error) {
+                throw error;
+            }
+            throw new Error(`Network request failed: ${String(error)}`);
+        }
+    }
+
     private async makeRequest(request: AnthropicRequest): Promise<AnthropicResponse> {
         try {
             const response = await requestUrl({
-                url: this.baseUrl,
+                url: this.messagesUrl,
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
