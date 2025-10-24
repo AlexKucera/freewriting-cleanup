@@ -25,14 +25,23 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
         this.plugin = plugin;
     }
 
-    async display(): Promise<void> {
+    display(): void {
         const { containerEl } = this;
         containerEl.empty();
 
         containerEl.createEl('h2', { text: 'Freewriting Cleanup Settings' });
 
-        // Load models asynchronously
-        await this.loadModels();
+        // Load models asynchronously in the background
+        this.loadModels()
+            .then(() => {
+                // Update dropdown UI when models are loaded
+                if (this.modelDropdown) {
+                    this.populateModelDropdown(this.modelDropdown);
+                }
+            })
+            .catch((error) => {
+                console.error('Error loading models in background:', error);
+            });
 
         // MARK: - API Configuration
 
