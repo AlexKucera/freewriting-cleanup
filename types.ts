@@ -128,6 +128,8 @@ export interface CleanupResult {
         /** Output tokens */
         output: number;
     };
+    /** Duration of the cleanup operation in milliseconds */
+    duration: number;
 }
 
 /**

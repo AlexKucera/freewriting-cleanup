@@ -4,7 +4,7 @@
 import { Editor, MarkdownView, Notice } from 'obsidian';
 import { CleanupService } from '../services/cleanupService';
 import { FreewritingCleanupSettings, ANTHROPIC_LIMITS } from '../types';
-import { ApiKeyError, TextTooLongError, ServiceUnavailableError } from '../errors';
+import { ApiKeyError, TextTooLongError, ServiceUnavailableError, ApiError, InvalidResponseError, NetworkError } from '../errors';
 
 /**
  * Command handler for freewriting cleanup operations
@@ -72,14 +72,25 @@ export class CleanupCommand {
                 // Move to end of current line and insert new content
                 editor.setCursor(insertPosition);
                 editor.replaceRange(formattedResult, insertPosition);
+
+                // Show success notice with duration (loadingNotice will be hidden in finally)
+                new Notice(`Text cleanup completed in ${(result.duration / 1000).toFixed(1)}s`);
             } catch (error) {
                 // Handle specific error types using instanceof checks
                 if (error instanceof ApiKeyError) {
                     new Notice('API key error. Please check your settings.');
                 } else if (error instanceof TextTooLongError) {
                     new Notice(error.message);
+                } else if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+                    new Notice('API key was rejected by the server. Please verify your key.');
+                } else if (error instanceof ApiError && error.status === 429) {
+                    new Notice('Rate limited by API. Please wait and try again.');
                 } else if (error instanceof ServiceUnavailableError) {
                     new Notice(error.message);
+                } else if (error instanceof InvalidResponseError) {
+                    new Notice('Received an unexpected response from Claude. Please try again.');
+                } else if (error instanceof NetworkError) {
+                    new Notice('Network error. Check your connection and try again.');
                 } else if (error instanceof Error) {
                     new Notice(`Cleanup failed: ${error.message}`);
                 } else {

@@ -74,6 +74,8 @@ export class CleanupService {
                 settings.customCommentaryPrompt
             );
 
+            const duration = Date.now() - startTime;
+
             const result: CleanupResult = {
                 originalText: text,
                 cleanedText,
@@ -83,11 +85,9 @@ export class CleanupService {
                 tokensUsed: {
                     input: usage?.input_tokens ?? 0,
                     output: usage?.output_tokens ?? 0
-                }
+                },
+                duration
             };
-
-            const duration = Date.now() - startTime;
-            new Notice(`Text cleanup completed in ${(duration / 1000).toFixed(1)}s`);
 
             return result;
         } catch (error) {
@@ -193,6 +193,12 @@ export class CleanupService {
             errors.push('Cleanup prompt is required');
         }
 
+        if (settings.enableCommentary &&
+            settings.commentaryStyle === 'custom' &&
+            (!settings.customCommentaryPrompt || settings.customCommentaryPrompt.trim().length === 0)) {
+            errors.push('Custom commentary prompt is required when commentary style is "custom"');
+        }
+
         return {
             isValid: errors.length === 0,
             errors
@@ -215,14 +221,17 @@ export class CleanupService {
      * Estimates token count from character count
      *
      * Uses rough approximation of 1 token per 4 characters for English text.
-     * This is used for user feedback before making API requests.
+     * Adds a 10% safety margin to account for estimation inaccuracy and reduce
+     * the chance of near-limit failures.
      *
      * @param text - Text to estimate tokens for
-     * @returns Estimated token count
+     * @returns Estimated token count with safety margin
      */
     static estimateTokenCount(text: string): number {
         // Rough estimation: 1 token ≈ 4 characters for English text
-        return Math.ceil(text.length / 4);
+        const baseEstimate = Math.ceil(text.length / 4);
+        // Add 10% safety margin to reduce near-limit failures
+        return Math.ceil(baseEstimate * 1.1);
     }
 
     /**
