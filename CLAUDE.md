@@ -75,7 +75,7 @@ Settings use the `FreewritingCleanupSettings` interface with modular defaults:
 ```typescript
 interface FreewritingCleanupSettings {
     apiKey: string;
-    model: AnthropicModel;
+    model: string; // Dynamic model ID fetched from Anthropic API
     cleanupPrompt: string;
     enableCommentary: boolean;
     commentaryStyle: CommentaryStyle;

@@ -80,16 +80,15 @@ export interface ModelCache {
     fetchedAt: number;
 }
 
-export const ANTHROPIC_MODELS = [
+// Fallback model list used when API key is not set or API fetch fails
+export const ANTHROPIC_MODELS: readonly string[] = [
     'claude-opus-4-1-20250805',
     'claude-opus-4-20250514',
     'claude-sonnet-4-20250514',
     'claude-3-7-sonnet-latest',
     'claude-3-5-haiku-latest',
     'claude-3-haiku-20240307'
-] as const;
-
-export type AnthropicModel = typeof ANTHROPIC_MODELS[number];
+];
 
 // Commentary style options
 export const COMMENTARY_STYLES = [
