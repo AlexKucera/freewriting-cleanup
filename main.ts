@@ -15,15 +15,15 @@ export default class FreewritingCleanupPlugin extends Plugin {
     cleanupCommand: CleanupCommand;
 
     async onload() {
-        await this.loadSettings();
+        // Load settings and reuse the data to avoid double loadData() call
+        const data = await this.loadSettings();
 
         // Initialize services
         this.cleanupService = new CleanupService(this.settings.apiKey);
         this.modelService = new ModelService(this.cleanupService.anthropicClient);
         this.cleanupCommand = new CleanupCommand(this.cleanupService);
 
-        // Load model cache
-        const data = await this.loadData() as FreewritingCleanupData | null;
+        // Load model cache from already-loaded data
         if (data?.modelCache) {
             this.modelService.loadCache(data.modelCache);
         }
@@ -41,8 +41,10 @@ export default class FreewritingCleanupPlugin extends Plugin {
 
     // MARK: - Settings Management
 
-    async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    async loadSettings(): Promise<FreewritingCleanupData | null> {
+        const data = await this.loadData() as FreewritingCleanupData | null;
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+        return data;
     }
 
     async saveSettings() {
