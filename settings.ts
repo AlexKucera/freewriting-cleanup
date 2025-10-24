@@ -3,7 +3,7 @@
 
 import { App, ButtonComponent, DropdownComponent, Modal, Notice, PluginSettingTab, Setting } from 'obsidian';
 import FreewritingCleanupPlugin from './main';
-import { FreewritingCleanupSettings, COMMENTARY_STYLES, CommentaryStyle, COMMENTARY_PRESETS } from './types';
+import { FreewritingCleanupSettings, COMMENTARY_STYLES, CommentaryStyle, COMMENTARY_PRESETS, ANTHROPIC_LIMITS } from './types';
 import { ModelOption } from './services/modelService';
 
 /**
@@ -32,6 +32,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
     plugin: FreewritingCleanupPlugin;
     private modelDropdown: DropdownComponent | null = null;
     private availableModels: ModelOption[] = [];
+    private saveDebounce: number | null = null;
 
     /**
      * Creates a new settings tab
@@ -42,6 +43,20 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
     constructor(app: App, plugin: FreewritingCleanupPlugin) {
         super(app, plugin);
         this.plugin = plugin;
+    }
+
+    /**
+     * Schedules a debounced save to reduce disk IO
+     *
+     * Debounces save operations to prevent excessive writes during rapid
+     * user input (e.g., typing in text fields). Uses 300ms delay.
+     */
+    private scheduleSave(): void {
+        if (this.saveDebounce !== null) window.clearTimeout(this.saveDebounce);
+        this.saveDebounce = window.setTimeout(() => {
+            this.plugin.saveSettings();
+            this.saveDebounce = null;
+        }, 300);
     }
 
     /**
@@ -81,7 +96,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.apiKey)
                 .onChange(async (value) => {
                     this.plugin.settings.apiKey = value;
-                    await this.plugin.saveSettings();
+                    this.scheduleSave();
                     this.plugin.cleanupService.updateApiKey(value);
 
                     // Refresh when key is entered; revert to fallback when cleared
@@ -135,7 +150,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.cleanupPrompt)
                     .onChange(async (value) => {
                         this.plugin.settings.cleanupPrompt = value;
-                        await this.plugin.saveSettings();
+                        this.scheduleSave();
                     });
 
                 // Style the textarea
@@ -154,7 +169,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.enableCommentary)
                 .onChange(async (value) => {
                     this.plugin.settings.enableCommentary = value;
-                    await this.plugin.saveSettings();
+                    this.scheduleSave();
                     this.display(); // Refresh to show/hide commentary options
                 }));
 
@@ -171,7 +186,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
                         .setValue(this.plugin.settings.commentaryStyle)
                         .onChange(async (value) => {
                             this.plugin.settings.commentaryStyle = value as CommentaryStyle;
-                            await this.plugin.saveSettings();
+                            this.scheduleSave();
                             this.display(); // Refresh to show/hide custom prompt
                         });
                 });
@@ -186,7 +201,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
                             .setValue(this.plugin.settings.customCommentaryPrompt)
                             .onChange(async (value) => {
                                 this.plugin.settings.customCommentaryPrompt = value;
-                                await this.plugin.saveSettings();
+                                this.scheduleSave();
                             });
 
                         // Style the textarea
@@ -215,12 +230,12 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
 
         const list = usageDiv.createEl('ol');
         list.createEl('li', { text: 'Select the text you want to clean up in any note' });
-        list.createEl('li', { text: 'Run the "Clean Up Freewriting" command (Ctrl/Cmd+P)' });
+        list.createEl('li', { text: 'Run the "Clean up text" command (Ctrl/Cmd+P)' });
         list.createEl('li', { text: 'The cleaned text will appear below your original text' });
 
         const limits = usageDiv.createEl('p');
         limits.createEl('strong', { text: 'Limits: ' });
-        limits.appendText('Maximum 680,000 characters (~150,000 words) per cleanup');
+        limits.appendText(`Maximum ${ANTHROPIC_LIMITS.MAX_CHARACTERS.toLocaleString()} characters per cleanup (~${Math.floor(ANTHROPIC_LIMITS.MAX_TOKENS / 4).toLocaleString()} words estimated)`);
 
         const format = usageDiv.createEl('p');
         format.createEl('strong', { text: 'Format: ' });
