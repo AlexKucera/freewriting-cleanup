@@ -24,12 +24,25 @@ export class ModelService {
     /**
      * Get available models with caching and fallback logic
      * Returns models from cache if valid, otherwise fetches from API
-     * Falls back to hardcoded list if API fails
+     * Falls back to hardcoded list if API fails or API key is missing
      */
     async getAvailableModels(): Promise<ModelOption[]> {
         // Check if we have a valid cache
         if (this.isCacheValid() && this.modelCache) {
             return this.formatModels(this.modelCache.models);
+        }
+
+        // If no API key, immediately return and cache fallback (no Notice needed)
+        if (!this.anthropicClient.validateApiKey()) {
+            const fallback = this.getFallbackModels();
+            // Cache fallback models as ModelInfo for consistency
+            this.updateCache(fallback.map(f => ({
+                id: f.id,
+                display_name: f.displayName,
+                created_at: '',
+                type: 'model'
+            } as ModelInfo)));
+            return fallback;
         }
 
         // Try to fetch from API
@@ -40,7 +53,15 @@ export class ModelService {
         } catch (error) {
             console.error('Failed to fetch models from API:', error);
             new Notice('Fetching current models failed. Using hardcoded fallback list.');
-            return this.getFallbackModels();
+            const fallback = this.getFallbackModels();
+            // Cache fallback models as ModelInfo for consistency
+            this.updateCache(fallback.map(f => ({
+                id: f.id,
+                display_name: f.displayName,
+                created_at: '',
+                type: 'model'
+            } as ModelInfo)));
+            return fallback;
         }
     }
 
