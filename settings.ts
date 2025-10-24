@@ -55,7 +55,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
                         await this.refreshModels();
                     } else if (this.modelDropdown) {
                         // Show fallback immediately when key is cleared
-                        this.availableModels = await this.plugin.modelService.getAvailableModels();
+                        this.availableModels = this.plugin.modelService.getFallbackOptions();
                         this.populateModelDropdown(this.modelDropdown);
                     }
                 }))

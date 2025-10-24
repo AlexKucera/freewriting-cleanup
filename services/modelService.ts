@@ -49,6 +49,19 @@ export class ModelService {
      * Used when user changes API key
      */
     async refreshModels(): Promise<ModelOption[]> {
+        // If no API key, immediately return and cache fallback
+        if (!this.anthropicClient.validateApiKey()) {
+            const fallback = this.getFallbackModels();
+            // Cache fallback models as ModelInfo for consistency
+            this.updateCache(fallback.map(f => ({
+                id: f.id,
+                display_name: f.displayName,
+                created_at: '',
+                type: 'model'
+            } as ModelInfo)));
+            return fallback;
+        }
+
         try {
             const response = await this.anthropicClient.fetchModels();
             this.updateCache(response.data);
@@ -56,7 +69,15 @@ export class ModelService {
         } catch (error) {
             console.error('Failed to refresh models from API:', error);
             new Notice('Fetching current models failed. Using hardcoded fallback list.');
-            return this.getFallbackModels();
+            const fallback = this.getFallbackModels();
+            // Cache fallback models as ModelInfo for consistency
+            this.updateCache(fallback.map(f => ({
+                id: f.id,
+                display_name: f.displayName,
+                created_at: '',
+                type: 'model'
+            } as ModelInfo)));
+            return fallback;
         }
     }
 
@@ -79,6 +100,14 @@ export class ModelService {
      */
     clearCache(): void {
         this.modelCache = null;
+    }
+
+    /**
+     * Get fallback model options (public API for UI components)
+     * Returns hardcoded model list as ModelOption array
+     */
+    getFallbackOptions(): ModelOption[] {
+        return this.getFallbackModels();
     }
 
     // MARK: - Private Methods
@@ -109,12 +138,15 @@ export class ModelService {
     /**
      * Format ModelInfo array to ModelOption array for dropdown
      * Uses display_name if available, otherwise falls back to id
+     * Sorted by displayName for consistent UX across cache/API ordering
      */
     private formatModels(models: ModelInfo[]): ModelOption[] {
-        return models.map(model => ({
-            id: model.id,
-            displayName: model.display_name || model.id
-        }));
+        return models
+            .map(model => ({
+                id: model.id,
+                displayName: model.display_name || model.id
+            }))
+            .sort((a, b) => a.displayName.localeCompare(b.displayName));
     }
 
     /**
