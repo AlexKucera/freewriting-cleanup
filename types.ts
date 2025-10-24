@@ -92,8 +92,8 @@ export interface AnthropicResponse {
     role: 'assistant';
     /** Reason generation stopped */
     stop_reason: string;
-    /** Stop sequence that triggered end (if any) */
-    stop_sequence: null;
+    /** Stop sequence that triggered end (if any) - string | null */
+    stop_sequence: string | null;
     /** Response type */
     type: 'message';
     /** Token usage statistics */
