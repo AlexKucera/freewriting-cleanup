@@ -1,7 +1,7 @@
 // ABOUTME: Settings interface and SettingTab implementation for the Freewriting Cleanup plugin
 // ABOUTME: Handles user configuration including API key, model selection, and prompt customization
 
-import { App, ButtonComponent, DropdownComponent, Notice, PluginSettingTab, Setting } from 'obsidian';
+import { App, ButtonComponent, DropdownComponent, Modal, Notice, PluginSettingTab, Setting } from 'obsidian';
 import FreewritingCleanupPlugin from './main';
 import { FreewritingCleanupSettings, COMMENTARY_STYLES, CommentaryStyle, COMMENTARY_PRESETS } from './types';
 import { ModelOption } from './services/modelService';
@@ -49,9 +49,14 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                     this.plugin.cleanupService.updateApiKey(value);
 
-                    // Trigger model refresh when API key is entered
-                    if (value.trim().length > 0) {
+                    // Refresh when key is entered; revert to fallback when cleared
+                    const hasKey = value.trim().length > 0;
+                    if (hasKey) {
                         await this.refreshModels();
+                    } else if (this.modelDropdown) {
+                        // Show fallback immediately when key is cleared
+                        this.availableModels = await this.plugin.modelService.getAvailableModels();
+                        this.populateModelDropdown(this.modelDropdown);
                     }
                 }))
             .then(setting => {
@@ -320,53 +325,47 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
     }
 }
 
-// Simple confirmation modal
-class ConfirmModal {
-    private app: App;
+// Confirmation modal using Obsidian's Modal class for consistent styling and accessibility
+class ConfirmModal extends Modal {
     private title: string;
     private message: string;
     private callback: (result: boolean) => void;
-    private modalEl: HTMLElement | null = null;
 
     constructor(app: App, title: string, message: string, callback: (result: boolean) => void) {
-        this.app = app;
+        super(app);
         this.title = title;
         this.message = message;
         this.callback = callback;
     }
 
-    open(): void {
-        // Create modal backdrop
-        this.modalEl = document.createElement('div');
-        this.modalEl.className = 'modal-container mod-dim';
+    onOpen(): void {
+        const { contentEl } = this;
 
-        // Create modal content
-        const modal = this.modalEl.createDiv('modal');
-        const header = modal.createDiv('modal-header');
-        header.createEl('h3', { text: this.title });
+        contentEl.createEl('h2', { text: this.title });
+        contentEl.createEl('p', { text: this.message });
 
-        const content = modal.createDiv('modal-content');
-        content.createEl('p', { text: this.message });
+        const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
 
-        const buttons = modal.createDiv('modal-button-container');
+        const cancelButton = buttonContainer.createEl('button', { text: 'Cancel' });
+        cancelButton.addEventListener('click', () => {
+            this.close();
+            this.callback(false);
+        });
 
-        const cancelButton = buttons.createEl('button', { text: 'Cancel' });
-        cancelButton.onclick = () => this.close(false);
+        const confirmButton = buttonContainer.createEl('button', {
+            text: 'Confirm',
+            cls: 'mod-warning'
+        });
+        confirmButton.addEventListener('click', () => {
+            this.close();
+            this.callback(true);
+        });
 
-        const confirmButton = buttons.createEl('button', { text: 'Confirm', cls: 'mod-warning' });
-        confirmButton.onclick = () => this.close(true);
-
-        if (this.modalEl) {
-            document.body.appendChild(this.modalEl);
-        }
         confirmButton.focus();
     }
 
-    private close(result: boolean): void {
-        if (this.modalEl && this.modalEl.parentNode) {
-            this.modalEl.parentNode.removeChild(this.modalEl);
-        }
-        this.modalEl = null;
-        this.callback(result);
+    onClose(): void {
+        const { contentEl } = this;
+        contentEl.empty();
     }
 }
