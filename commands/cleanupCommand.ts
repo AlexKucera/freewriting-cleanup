@@ -5,15 +5,38 @@ import { Editor, MarkdownView, Notice } from 'obsidian';
 import { CleanupService } from '../services/cleanupService';
 import { FreewritingCleanupSettings } from '../types';
 
+/**
+ * Command handler for freewriting cleanup operations
+ *
+ * Coordinates editor interaction, text selection validation, cleanup execution,
+ * and result insertion. Provides user feedback through notices for all stages
+ * of the cleanup process.
+ */
 export class CleanupCommand {
     private cleanupService: CleanupService;
 
+    /**
+     * Creates a new cleanup command handler
+     *
+     * @param cleanupService - Service for performing text cleanup
+     */
     constructor(cleanupService: CleanupService) {
         this.cleanupService = cleanupService;
     }
 
     // MARK: - Public Methods
 
+    /**
+     * Executes the cleanup command on selected text
+     *
+     * Gets selected text from editor, validates it, sends to cleanup service,
+     * and inserts formatted result below the selection. Shows persistent loading
+     * notice during processing and error notices if operation fails.
+     *
+     * @param editor - Obsidian editor instance
+     * @param view - Current markdown view
+     * @param settings - Plugin settings for cleanup configuration
+     */
     async execute(editor: Editor, view: MarkdownView, settings: FreewritingCleanupSettings): Promise<void> {
         try {
             // Get selected text
@@ -87,7 +110,15 @@ export class CleanupCommand {
 
     // MARK: - Helper Methods
 
-
+    /**
+     * Formats text selection information for user feedback
+     *
+     * Creates a summary string showing character count, line count, and
+     * estimated token usage for the selected text.
+     *
+     * @param text - Selected text to analyze
+     * @returns Formatted information string
+     */
     private formatSelectedTextInfo(text: string): string {
         const characterCount = text.length;
         const estimatedTokens = CleanupService.estimateTokenCount(text);
@@ -98,6 +129,15 @@ export class CleanupCommand {
 
     // MARK: - Validation Methods
 
+    /**
+     * Validates text selection against API limits
+     *
+     * Checks that text is non-empty and within both character and token limits.
+     * Returns detailed validation result with error messages or info for user feedback.
+     *
+     * @param selectedText - Text to validate
+     * @returns Validation result with status, optional error, and optional info
+     */
     validateSelection(selectedText: string): {
         isValid: boolean;
         error?: string;

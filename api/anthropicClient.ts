@@ -4,6 +4,13 @@
 import { requestUrl } from 'obsidian';
 import { AnthropicRequest, AnthropicResponse, ANTHROPIC_LIMITS, CommentaryStyle, COMMENTARY_PRESETS, ModelsListResponse } from '../types';
 
+/**
+ * Client for interacting with the Anthropic Claude API
+ *
+ * Handles text cleanup operations using Claude models, including retry logic,
+ * error handling, and structured response parsing. Supports optional AI commentary
+ * on freewriting sessions.
+ */
 export class AnthropicClient {
     private apiKey: string;
     private messagesUrl = 'https://api.anthropic.com/v1/messages';
@@ -11,12 +18,33 @@ export class AnthropicClient {
     private readonly MAX_RETRIES = 3;
     private readonly RETRY_DELAY_BASE = 1000; // 1 second base delay
 
+    /**
+     * Creates a new Anthropic API client
+     *
+     * @param apiKey - Anthropic API key for authentication
+     */
     constructor(apiKey: string) {
         this.apiKey = apiKey;
     }
 
     // MARK: - Public Methods
 
+    /**
+     * Cleans up freewriting text using Claude AI
+     *
+     * Sends text to Claude with specified cleanup instructions and optionally
+     * requests commentary on the writing. Uses structured output markers to
+     * reliably extract cleaned text and commentary from the response.
+     *
+     * @param text - The freewriting text to clean up
+     * @param model - Claude model identifier (e.g., 'claude-3-5-haiku-latest')
+     * @param cleanupPrompt - Instructions for how to clean up the text
+     * @param enableCommentary - Whether to include AI commentary on the writing
+     * @param commentaryStyle - Style of commentary to provide (if enabled)
+     * @param customCommentaryPrompt - Custom prompt for commentary (used when style is 'custom')
+     * @returns Object containing cleaned text, optional commentary, and token usage
+     * @throws Error if API key is missing, text exceeds character limits, or API request fails
+     */
     async cleanupText(
         text: string,
         model: string,
@@ -84,6 +112,16 @@ You MUST use exactly these markers. Do not deviate from this format.`;
         };
     }
 
+    /**
+     * Tests the API connection with a simple request
+     *
+     * Sends a minimal test message to verify the API key is valid and
+     * the connection is working. Returns timing and token usage information
+     * to help diagnose connection issues.
+     *
+     * @param model - Claude model identifier to test with
+     * @returns Object indicating success/failure with optional timing details
+     */
     async testConnection(model: string): Promise<{
         success: boolean;
         message: string;
@@ -136,6 +174,16 @@ You MUST use exactly these markers. Do not deviate from this format.`;
 
     // MARK: - Private Methods
 
+    /**
+     * Makes an API request with automatic retry logic
+     *
+     * Retries failed requests up to MAX_RETRIES times with exponential backoff.
+     * This implementation makes the API calls more resilient to transient failures.
+     *
+     * @param request - The Anthropic API request to send
+     * @returns The API response
+     * @throws Error if all retry attempts fail
+     */
     private async makeRequestWithRetry(request: AnthropicRequest): Promise<AnthropicResponse> {
         let lastError: Error = new Error('No attempts made');
 
@@ -157,6 +205,18 @@ You MUST use exactly these markers. Do not deviate from this format.`;
         throw new Error(`Failed after ${this.MAX_RETRIES} attempts. Last error: ${lastError.message}`);
     }
 
+    /**
+     * Parses structured response text from Claude
+     *
+     * Extracts cleaned text and optional commentary using marker-based parsing.
+     * This approach provides reliable extraction even when Claude includes
+     * additional formatting or explanations.
+     *
+     * @param responseText - Raw text response from Claude API
+     * @param expectCommentary - Whether to look for commentary section
+     * @returns Object containing extracted cleaned text and optional commentary
+     * @throws Error if required markers are missing or cleaned text is empty
+     */
     private parseStructuredResponse(responseText: string, expectCommentary: boolean): { cleanedText: string; commentary?: string } {
         // Extract cleaned text
         const cleanedTextMatch = responseText.match(/===CLEANED TEXT===([\s\S]*?)===END CLEANED TEXT===/);
@@ -181,6 +241,16 @@ You MUST use exactly these markers. Do not deviate from this format.`;
         return { cleanedText, commentary };
     }
 
+    /**
+     * Fetches available Claude models from the Anthropic API
+     *
+     * Retrieves the current list of models with their metadata including
+     * display names and creation timestamps. Used for populating the model
+     * selection dropdown with current options.
+     *
+     * @returns API response containing array of model information
+     * @throws Error if API key is missing or request fails
+     */
     async fetchModels(): Promise<ModelsListResponse> {
         if (!this.apiKey) {
             throw new Error('API key is required');
@@ -209,6 +279,16 @@ You MUST use exactly these markers. Do not deviate from this format.`;
         }
     }
 
+    /**
+     * Makes a single API request to Claude messages endpoint
+     *
+     * Low-level method that handles the actual HTTP request to Anthropic.
+     * Used by makeRequestWithRetry for the underlying request logic.
+     *
+     * @param request - The Anthropic API request payload
+     * @returns The API response
+     * @throws Error if request fails or returns non-2xx status
+     */
     private async makeRequest(request: AnthropicRequest): Promise<AnthropicResponse> {
         try {
             const response = await requestUrl({
@@ -236,6 +316,16 @@ You MUST use exactly these markers. Do not deviate from this format.`;
         }
     }
 
+    /**
+     * Extracts text content from an Anthropic API response
+     *
+     * Safely extracts the text content from the first message in the response,
+     * with validation to ensure content exists and is not empty.
+     *
+     * @param response - The API response object
+     * @returns Trimmed text content from the response
+     * @throws Error if response has no content or empty text
+     */
     private extractTextFromResponse(response: AnthropicResponse): string {
         if (!response.content || response.content.length === 0) {
             throw new Error('No content received from API');
@@ -249,16 +339,35 @@ You MUST use exactly these markers. Do not deviate from this format.`;
         return text.trim();
     }
 
+    /**
+     * Utility method to pause execution for retry delays
+     *
+     * @param ms - Number of milliseconds to sleep
+     * @returns Promise that resolves after the specified delay
+     */
     private sleep(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     // MARK: - Configuration Methods
 
+    /**
+     * Updates the API key used for authentication
+     *
+     * Allows changing the API key without creating a new client instance.
+     * Used when user updates their API key in settings.
+     *
+     * @param apiKey - New Anthropic API key
+     */
     updateApiKey(apiKey: string): void {
         this.apiKey = apiKey;
     }
 
+    /**
+     * Validates that an API key is present and non-empty
+     *
+     * @returns True if API key exists and has non-whitespace content
+     */
     validateApiKey(): boolean {
         return !!(this.apiKey && this.apiKey.trim().length > 0);
     }
