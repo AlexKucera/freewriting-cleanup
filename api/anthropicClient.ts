@@ -2,11 +2,12 @@
 // ABOUTME: Handles API requests, error handling, retry logic, and response parsing
 
 import { requestUrl } from 'obsidian';
-import { AnthropicRequest, AnthropicResponse, AnthropicModel, ANTHROPIC_LIMITS, CommentaryStyle, COMMENTARY_PRESETS } from '../types';
+import { AnthropicRequest, AnthropicResponse, ANTHROPIC_LIMITS, CommentaryStyle, COMMENTARY_PRESETS, ModelsListResponse } from '../types';
 
 export class AnthropicClient {
     private apiKey: string;
-    private baseUrl = 'https://api.anthropic.com/v1/messages';
+    private messagesUrl = 'https://api.anthropic.com/v1/messages';
+    private modelsUrl = 'https://api.anthropic.com/v1/models';
     private readonly MAX_RETRIES = 3;
     private readonly RETRY_DELAY_BASE = 1000; // 1 second base delay
 
@@ -18,12 +19,12 @@ export class AnthropicClient {
 
     async cleanupText(
         text: string,
-        model: AnthropicModel,
+        model: string,
         cleanupPrompt: string,
         enableCommentary = false,
         commentaryStyle: CommentaryStyle = 'constructive',
         customCommentaryPrompt?: string
-    ): Promise<{ cleanedText: string; commentary?: string }> {
+    ): Promise<{ cleanedText: string; commentary?: string; usage?: { input_tokens: number; output_tokens: number } }> {
         if (!this.apiKey) {
             throw new Error('API key is required');
         }
@@ -74,10 +75,16 @@ You MUST use exactly these markers. Do not deviate from this format.`;
         };
 
         const response = await this.makeRequestWithRetry(request);
-        return this.parseStructuredResponse(response, enableCommentary);
+        const responseText = this.extractTextFromResponse(response);
+        const parsed = this.parseStructuredResponse(responseText, enableCommentary);
+
+        return {
+            ...parsed,
+            usage: response.usage
+        };
     }
 
-    async testConnection(model: AnthropicModel): Promise<{
+    async testConnection(model: string): Promise<{
         success: boolean;
         message: string;
         details?: {
@@ -129,13 +136,13 @@ You MUST use exactly these markers. Do not deviate from this format.`;
 
     // MARK: - Private Methods
 
-    private async makeRequestWithRetry(request: AnthropicRequest): Promise<string> {
+    private async makeRequestWithRetry(request: AnthropicRequest): Promise<AnthropicResponse> {
         let lastError: Error = new Error('No attempts made');
 
         for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
             try {
                 const response = await this.makeRequest(request);
-                return this.extractTextFromResponse(response);
+                return response;
             } catch (error) {
                 lastError = error instanceof Error ? error : new Error('Unknown error');
 
@@ -174,10 +181,38 @@ You MUST use exactly these markers. Do not deviate from this format.`;
         return { cleanedText, commentary };
     }
 
+    async fetchModels(): Promise<ModelsListResponse> {
+        if (!this.apiKey) {
+            throw new Error('API key is required');
+        }
+
+        try {
+            const response = await requestUrl({
+                url: this.modelsUrl,
+                method: 'GET',
+                headers: {
+                    'x-api-key': this.apiKey,
+                    'anthropic-version': '2023-06-01'
+                }
+            });
+
+            if (response.status < 200 || response.status >= 300) {
+                throw new Error(`Models API request failed: ${response.status}\n${response.text}`);
+            }
+
+            return response.json as ModelsListResponse;
+        } catch (error) {
+            if (error instanceof Error) {
+                throw error;
+            }
+            throw new Error(`Network request failed: ${String(error)}`);
+        }
+    }
+
     private async makeRequest(request: AnthropicRequest): Promise<AnthropicResponse> {
         try {
             const response = await requestUrl({
-                url: this.baseUrl,
+                url: this.messagesUrl,
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

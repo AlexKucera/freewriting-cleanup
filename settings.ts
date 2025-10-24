@@ -1,9 +1,10 @@
 // ABOUTME: Settings interface and SettingTab implementation for the Freewriting Cleanup plugin
 // ABOUTME: Handles user configuration including API key, model selection, and prompt customization
 
-import { App, ButtonComponent, Notice, PluginSettingTab, Setting } from 'obsidian';
+import { App, ButtonComponent, DropdownComponent, Modal, Notice, PluginSettingTab, Setting } from 'obsidian';
 import FreewritingCleanupPlugin from './main';
-import { FreewritingCleanupSettings, ANTHROPIC_MODELS, AnthropicModel, COMMENTARY_STYLES, CommentaryStyle, COMMENTARY_PRESETS } from './types';
+import { FreewritingCleanupSettings, COMMENTARY_STYLES, CommentaryStyle, COMMENTARY_PRESETS } from './types';
+import { ModelOption } from './services/modelService';
 
 export const DEFAULT_SETTINGS: FreewritingCleanupSettings = {
     apiKey: '',
@@ -16,6 +17,8 @@ export const DEFAULT_SETTINGS: FreewritingCleanupSettings = {
 
 export class FreewritingCleanupSettingTab extends PluginSettingTab {
     plugin: FreewritingCleanupPlugin;
+    private modelDropdown: DropdownComponent | null = null;
+    private availableModels: ModelOption[] = [];
 
     constructor(app: App, plugin: FreewritingCleanupPlugin) {
         super(app, plugin);
@@ -27,6 +30,18 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
         containerEl.empty();
 
         containerEl.createEl('h2', { text: 'Freewriting Cleanup Settings' });
+
+        // Load models asynchronously in the background
+        this.loadModels()
+            .then(() => {
+                // Update dropdown UI when models are loaded
+                if (this.modelDropdown) {
+                    this.populateModelDropdown(this.modelDropdown);
+                }
+            })
+            .catch((error) => {
+                console.error('Error loading models in background:', error);
+            });
 
         // MARK: - API Configuration
 
@@ -42,6 +57,16 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
                     this.plugin.settings.apiKey = value;
                     await this.plugin.saveSettings();
                     this.plugin.cleanupService.updateApiKey(value);
+
+                    // Refresh when key is entered; revert to fallback when cleared
+                    const hasKey = value.trim().length > 0;
+                    if (hasKey) {
+                        await this.refreshModels();
+                    } else if (this.modelDropdown) {
+                        // Show fallback immediately when key is cleared
+                        this.availableModels = this.plugin.modelService.getFallbackOptions();
+                        this.populateModelDropdown(this.modelDropdown);
+                    }
                 }))
             .then(setting => {
                 // Make it a password field
@@ -61,13 +86,12 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
             .setName('Claude Model')
             .setDesc('Which Claude model to use for text cleanup')
             .addDropdown(dropdown => {
-                ANTHROPIC_MODELS.forEach(model => {
-                    dropdown.addOption(model, model);
-                });
+                this.modelDropdown = dropdown;
+                this.populateModelDropdown(dropdown);
                 dropdown
                     .setValue(this.plugin.settings.model)
                     .onChange(async (value) => {
-                        this.plugin.settings.model = value as AnthropicModel;
+                        this.plugin.settings.model = value;
                         await this.plugin.saveSettings();
                     });
             });
@@ -191,6 +215,75 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
                 }));
     }
 
+    // MARK: - Model Loading
+
+    private async loadModels(): Promise<void> {
+        try {
+            this.availableModels = await this.plugin.modelService.getAvailableModels();
+        } catch (error) {
+            console.error('Error loading models:', error);
+            // Error already shown by ModelService via Notice
+        }
+    }
+
+    private populateModelDropdown(dropdown: DropdownComponent): void {
+        if (this.availableModels.length === 0) {
+            // No models available yet, disable dropdown
+            dropdown.addOption('', 'Loading models...');
+            dropdown.setDisabled(true);
+            return;
+        }
+
+        // Clear existing options
+        dropdown.selectEl.empty();
+
+        // Add all available models
+        this.availableModels.forEach(model => {
+            dropdown.addOption(model.id, model.displayName);
+        });
+
+        dropdown.setDisabled(false);
+    }
+
+    private async refreshModels(): Promise<void> {
+        try {
+            // Disable dropdown during refresh
+            if (this.modelDropdown) {
+                this.modelDropdown.setDisabled(true);
+                this.modelDropdown.selectEl.empty();
+                this.modelDropdown.addOption('', 'Refreshing models...');
+            }
+
+            // Fetch new models
+            this.availableModels = await this.plugin.modelService.refreshModels();
+
+            // Update dropdown
+            if (this.modelDropdown) {
+                this.populateModelDropdown(this.modelDropdown);
+
+                // Restore selected model if it still exists, otherwise use first available
+                const currentModel = this.plugin.settings.model;
+                const modelExists = this.availableModels.some(m => m.id === currentModel);
+
+                if (modelExists) {
+                    this.modelDropdown.setValue(currentModel);
+                } else if (this.availableModels.length > 0) {
+                    // Model no longer available - update to first available model
+                    const newModel = this.availableModels[0].id;
+                    this.plugin.settings.model = newModel;
+                    this.modelDropdown.setValue(newModel);
+                    console.log(`Model '${currentModel}' no longer available, switched to '${newModel}'`);
+                }
+            }
+
+            // Save updated cache and any model changes
+            await this.plugin.saveSettings();
+        } catch (error) {
+            console.error('Error refreshing models:', error);
+            // Error already shown by ModelService via Notice
+        }
+    }
+
     // MARK: - Private Methods
 
     private async testApiKey(button: ButtonComponent): Promise<void> {
@@ -248,53 +341,47 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
     }
 }
 
-// Simple confirmation modal
-class ConfirmModal {
-    private app: App;
+// Confirmation modal using Obsidian's Modal class for consistent styling and accessibility
+class ConfirmModal extends Modal {
     private title: string;
     private message: string;
     private callback: (result: boolean) => void;
-    private modalEl: HTMLElement | null = null;
 
     constructor(app: App, title: string, message: string, callback: (result: boolean) => void) {
-        this.app = app;
+        super(app);
         this.title = title;
         this.message = message;
         this.callback = callback;
     }
 
-    open(): void {
-        // Create modal backdrop
-        this.modalEl = document.createElement('div');
-        this.modalEl.className = 'modal-container mod-dim';
+    onOpen(): void {
+        const { contentEl } = this;
 
-        // Create modal content
-        const modal = this.modalEl.createDiv('modal');
-        const header = modal.createDiv('modal-header');
-        header.createEl('h3', { text: this.title });
+        contentEl.createEl('h2', { text: this.title });
+        contentEl.createEl('p', { text: this.message });
 
-        const content = modal.createDiv('modal-content');
-        content.createEl('p', { text: this.message });
+        const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
 
-        const buttons = modal.createDiv('modal-button-container');
+        const cancelButton = buttonContainer.createEl('button', { text: 'Cancel' });
+        cancelButton.addEventListener('click', () => {
+            this.close();
+            this.callback(false);
+        });
 
-        const cancelButton = buttons.createEl('button', { text: 'Cancel' });
-        cancelButton.onclick = () => this.close(false);
+        const confirmButton = buttonContainer.createEl('button', {
+            text: 'Confirm',
+            cls: 'mod-warning'
+        });
+        confirmButton.addEventListener('click', () => {
+            this.close();
+            this.callback(true);
+        });
 
-        const confirmButton = buttons.createEl('button', { text: 'Confirm', cls: 'mod-warning' });
-        confirmButton.onclick = () => this.close(true);
-
-        if (this.modalEl) {
-            document.body.appendChild(this.modalEl);
-        }
         confirmButton.focus();
     }
 
-    private close(result: boolean): void {
-        if (this.modalEl && this.modalEl.parentNode) {
-            this.modalEl.parentNode.removeChild(this.modalEl);
-        }
-        this.modalEl = null;
-        this.callback(result);
+    onClose(): void {
+        const { contentEl } = this;
+        contentEl.empty();
     }
 }

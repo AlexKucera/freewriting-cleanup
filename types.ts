@@ -3,11 +3,15 @@
 
 export interface FreewritingCleanupSettings {
     apiKey: string;
-    model: AnthropicModel;
+    model: string; // Changed from AnthropicModel to string to support dynamic models
     cleanupPrompt: string;
     enableCommentary: boolean;
     commentaryStyle: CommentaryStyle;
     customCommentaryPrompt: string;
+}
+
+export interface FreewritingCleanupData extends FreewritingCleanupSettings {
+    modelCache?: ModelCache;
 }
 
 export interface AnthropicMessage {
@@ -57,16 +61,34 @@ export interface CleanupResult {
     };
 }
 
-export const ANTHROPIC_MODELS = [
+export interface ModelInfo {
+    id: string;
+    display_name: string;
+    created_at: string;
+    type: string;
+}
+
+export interface ModelsListResponse {
+    data: ModelInfo[];
+    first_id: string;
+    has_more: boolean;
+    last_id: string;
+}
+
+export interface ModelCache {
+    models: ModelInfo[];
+    fetchedAt: number;
+}
+
+// Fallback model list used when API key is not set or API fetch fails
+export const ANTHROPIC_MODELS: readonly string[] = [
     'claude-opus-4-1-20250805',
     'claude-opus-4-20250514',
     'claude-sonnet-4-20250514',
     'claude-3-7-sonnet-latest',
     'claude-3-5-haiku-latest',
     'claude-3-haiku-20240307'
-] as const;
-
-export type AnthropicModel = typeof ANTHROPIC_MODELS[number];
+];
 
 // Commentary style options
 export const COMMENTARY_STYLES = [
