@@ -24,7 +24,7 @@ export class AnthropicClient {
         enableCommentary = false,
         commentaryStyle: CommentaryStyle = 'constructive',
         customCommentaryPrompt?: string
-    ): Promise<{ cleanedText: string; commentary?: string }> {
+    ): Promise<{ cleanedText: string; commentary?: string; usage?: { input_tokens: number; output_tokens: number } }> {
         if (!this.apiKey) {
             throw new Error('API key is required');
         }
@@ -75,7 +75,13 @@ You MUST use exactly these markers. Do not deviate from this format.`;
         };
 
         const response = await this.makeRequestWithRetry(request);
-        return this.parseStructuredResponse(response, enableCommentary);
+        const responseText = this.extractTextFromResponse(response);
+        const parsed = this.parseStructuredResponse(responseText, enableCommentary);
+
+        return {
+            ...parsed,
+            usage: response.usage
+        };
     }
 
     async testConnection(model: string): Promise<{
@@ -130,13 +136,13 @@ You MUST use exactly these markers. Do not deviate from this format.`;
 
     // MARK: - Private Methods
 
-    private async makeRequestWithRetry(request: AnthropicRequest): Promise<string> {
+    private async makeRequestWithRetry(request: AnthropicRequest): Promise<AnthropicResponse> {
         let lastError: Error = new Error('No attempts made');
 
         for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
             try {
                 const response = await this.makeRequest(request);
-                return this.extractTextFromResponse(response);
+                return response;
             } catch (error) {
                 lastError = error instanceof Error ? error : new Error('Unknown error');
 

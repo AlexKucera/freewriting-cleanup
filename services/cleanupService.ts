@@ -37,7 +37,7 @@ export class CleanupService {
         const startTime = Date.now();
 
         try {
-            const { cleanedText, commentary } = await this.client.cleanupText(
+            const { cleanedText, commentary, usage } = await this.client.cleanupText(
                 text,
                 settings.model,
                 settings.cleanupPrompt,
@@ -53,8 +53,8 @@ export class CleanupService {
                 timestamp: new Date(),
                 model: settings.model,
                 tokensUsed: {
-                    input: 0, // We don't have access to this from the response
-                    output: 0  // We don't have access to this from the response
+                    input: usage?.input_tokens ?? 0,
+                    output: usage?.output_tokens ?? 0
                 }
             };
 
