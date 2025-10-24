@@ -91,8 +91,7 @@ export class CleanupService {
 
             return result;
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-            new Notice(`Text cleanup failed: ${errorMessage}`);
+            // Let the command layer handle user feedback to avoid duplicate notices
             throw error;
         }
     }
