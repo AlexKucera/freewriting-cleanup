@@ -4,6 +4,7 @@
 import { Notice } from 'obsidian';
 import { AnthropicClient } from '../api/anthropicClient';
 import { FreewritingCleanupSettings, CleanupResult, ANTHROPIC_LIMITS } from '../types';
+import { ApiKeyError, TextTooLongError } from '../errors';
 
 /**
  * Service for orchestrating text cleanup operations
@@ -53,12 +54,12 @@ export class CleanupService {
         }
 
         if (!this.client.validateApiKey()) {
-            throw new Error('API key is not configured. Please check your plugin settings.');
+            throw new ApiKeyError('API key is not configured. Please check your plugin settings.');
         }
 
         // Check text length limits
         if (text.length > ANTHROPIC_LIMITS.MAX_CHARACTERS) {
-            throw new Error(`Selected text is too long (${text.length} characters). Maximum allowed: ${ANTHROPIC_LIMITS.MAX_CHARACTERS} characters.`);
+            throw new TextTooLongError(`Selected text is too long (${text.length} characters). Maximum allowed: ${ANTHROPIC_LIMITS.MAX_CHARACTERS} characters.`);
         }
 
         const startTime = Date.now();

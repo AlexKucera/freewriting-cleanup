@@ -4,6 +4,7 @@
 import { Editor, MarkdownView, Notice } from 'obsidian';
 import { CleanupService } from '../services/cleanupService';
 import { FreewritingCleanupSettings, ANTHROPIC_LIMITS } from '../types';
+import { ApiKeyError, TextTooLongError, ServiceUnavailableError } from '../errors';
 
 /**
  * Command handler for freewriting cleanup operations
@@ -72,17 +73,15 @@ export class CleanupCommand {
                 editor.setCursor(insertPosition);
                 editor.replaceRange(formattedResult, insertPosition);
             } catch (error) {
-                // Handle specific error types
-                if (error instanceof Error) {
-                    if (error.message.includes('API key')) {
-                        new Notice('API key error. Please check your settings.');
-                    } else if (error.message.includes('too long')) {
-                        new Notice('Text is too long for processing.');
-                    } else if (error.message.includes('Failed after')) {
-                        new Notice('Service temporarily unavailable. Please try again.');
-                    } else {
-                        new Notice(`Cleanup failed: ${error.message}`);
-                    }
+                // Handle specific error types using instanceof checks
+                if (error instanceof ApiKeyError) {
+                    new Notice('API key error. Please check your settings.');
+                } else if (error instanceof TextTooLongError) {
+                    new Notice('Text is too long for processing.');
+                } else if (error instanceof ServiceUnavailableError) {
+                    new Notice('Service temporarily unavailable. Please try again.');
+                } else if (error instanceof Error) {
+                    new Notice(`Cleanup failed: ${error.message}`);
                 } else {
                     new Notice('An unexpected error occurred during cleanup.');
                 }

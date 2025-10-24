@@ -3,6 +3,15 @@
 
 import { requestUrl } from 'obsidian';
 import { AnthropicRequest, AnthropicResponse, ANTHROPIC_LIMITS, CommentaryStyle, COMMENTARY_PRESETS, ModelsListResponse } from '../types';
+import {
+    ApiKeyError,
+    TextTooLongError,
+    ConfigurationError,
+    ServiceUnavailableError,
+    InvalidResponseError,
+    NetworkError,
+    ApiError
+} from '../errors';
 
 /**
  * Client for interacting with the Anthropic Claude API
@@ -54,11 +63,11 @@ export class AnthropicClient {
         customCommentaryPrompt?: string
     ): Promise<{ cleanedText: string; commentary?: string; usage?: { input_tokens: number; output_tokens: number } }> {
         if (!this.apiKey) {
-            throw new Error('API key is required');
+            throw new ApiKeyError('API key is required');
         }
 
         if (text.length > ANTHROPIC_LIMITS.MAX_CHARACTERS) {
-            throw new Error(`Text too long. Maximum ${ANTHROPIC_LIMITS.MAX_CHARACTERS} characters allowed.`);
+            throw new TextTooLongError(`Text too long. Maximum ${ANTHROPIC_LIMITS.MAX_CHARACTERS} characters allowed.`);
         }
 
         // Get commentary prompt if enabled
@@ -67,7 +76,7 @@ export class AnthropicClient {
             if (commentaryStyle === 'custom' && customCommentaryPrompt) {
                 commentaryPrompt = customCommentaryPrompt;
             } else if (commentaryStyle === 'custom') {
-                throw new Error('Custom commentary style requires a custom prompt. Please provide customCommentaryPrompt.');
+                throw new ConfigurationError('Custom commentary style requires a custom prompt. Please provide customCommentaryPrompt.');
             } else {
                 commentaryPrompt = COMMENTARY_PRESETS[commentaryStyle as Exclude<CommentaryStyle, 'custom'>];
             }
@@ -204,7 +213,7 @@ You MUST use exactly these markers. Do not deviate from this format.`;
             }
         }
 
-        throw new Error(`Failed after ${this.MAX_RETRIES} attempts. Last error: ${lastError.message}`);
+        throw new ServiceUnavailableError(`Failed after ${this.MAX_RETRIES} attempts. Last error: ${lastError.message}`);
     }
 
     /**
@@ -223,12 +232,12 @@ You MUST use exactly these markers. Do not deviate from this format.`;
         // Extract cleaned text
         const cleanedTextMatch = responseText.match(/===CLEANED TEXT===([\s\S]*?)===END CLEANED TEXT===/);
         if (!cleanedTextMatch) {
-            throw new Error('Invalid response format: Could not find cleaned text section');
+            throw new InvalidResponseError('Invalid response format: Could not find cleaned text section');
         }
 
         const cleanedText = cleanedTextMatch[1].trim();
         if (!cleanedText) {
-            throw new Error('Empty cleaned text received');
+            throw new InvalidResponseError('Empty cleaned text received');
         }
 
         let commentary: string | undefined;
@@ -255,7 +264,7 @@ You MUST use exactly these markers. Do not deviate from this format.`;
      */
     async fetchModels(): Promise<ModelsListResponse> {
         if (!this.apiKey) {
-            throw new Error('API key is required');
+            throw new ApiKeyError('API key is required');
         }
 
         try {
@@ -269,7 +278,7 @@ You MUST use exactly these markers. Do not deviate from this format.`;
             });
 
             if (response.status < 200 || response.status >= 300) {
-                throw new Error(`Models API request failed: ${response.status}\n${response.text}`);
+                throw new ApiError(`Models API request failed: ${response.status}\n${response.text}`, response.status, response.text);
             }
 
             return response.json as ModelsListResponse;
@@ -277,7 +286,7 @@ You MUST use exactly these markers. Do not deviate from this format.`;
             if (error instanceof Error) {
                 throw error;
             }
-            throw new Error(`Network request failed: ${String(error)}`);
+            throw new NetworkError(`Network request failed: ${String(error)}`);
         }
     }
 
@@ -306,7 +315,7 @@ You MUST use exactly these markers. Do not deviate from this format.`;
 
             if (response.status < 200 || response.status >= 300) {
                 const errorBody = response.text || 'Unknown error';
-                throw new Error(`API request failed (${response.status}): ${errorBody}`);
+                throw new ApiError(`API request failed (${response.status}): ${errorBody}`, response.status, errorBody);
             }
 
             return response.json as AnthropicResponse;
@@ -314,7 +323,7 @@ You MUST use exactly these markers. Do not deviate from this format.`;
             if (error instanceof Error) {
                 throw error;
             }
-            throw new Error(`Network request failed: ${String(error)}`);
+            throw new NetworkError(`Network request failed: ${String(error)}`);
         }
     }
 
@@ -330,12 +339,12 @@ You MUST use exactly these markers. Do not deviate from this format.`;
      */
     private extractTextFromResponse(response: AnthropicResponse): string {
         if (!response.content || response.content.length === 0) {
-            throw new Error('No content received from API');
+            throw new InvalidResponseError('No content received from API');
         }
 
         const text = response.content[0].text;
         if (!text || text.trim().length === 0) {
-            throw new Error('Empty response from API');
+            throw new InvalidResponseError('Empty response from API');
         }
 
         return text.trim();
