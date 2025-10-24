@@ -102,40 +102,20 @@ export class CleanupCommand {
         }
     }
 
-    // MARK: - Helper Methods
-
-    /**
-     * Formats text selection information for user feedback
-     *
-     * Creates a summary string showing character count, line count, and
-     * estimated token usage for the selected text.
-     *
-     * @param text - Selected text to analyze
-     * @returns Formatted information string
-     */
-    private formatSelectedTextInfo(text: string): string {
-        const characterCount = text.length;
-        const estimatedTokens = CleanupService.estimateTokenCount(text);
-        const lines = text.split('\n').length;
-
-        return `Selected: ${characterCount} characters, ${lines} lines, ~${estimatedTokens} tokens`;
-    }
-
     // MARK: - Validation Methods
 
     /**
      * Validates text selection against API limits
      *
      * Checks that text is non-empty and within both character and token limits.
-     * Returns detailed validation result with error messages or info for user feedback.
+     * Returns detailed validation result with error messages.
      *
      * @param selectedText - Text to validate
-     * @returns Validation result with status, optional error, and optional info
+     * @returns Validation result with status and optional error
      */
     validateSelection(selectedText: string): {
         isValid: boolean;
         error?: string;
-        info?: string;
     } {
         if (!selectedText || selectedText.trim().length === 0) {
             return {
@@ -161,8 +141,7 @@ export class CleanupCommand {
         }
 
         return {
-            isValid: true,
-            info: this.formatSelectedTextInfo(selectedText)
+            isValid: true
         };
     }
 }
