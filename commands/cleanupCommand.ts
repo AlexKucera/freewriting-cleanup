@@ -42,11 +42,6 @@ export class CleanupCommand {
             // Get selected text
             const selectedText = editor.getSelection();
 
-            if (!selectedText || selectedText.trim().length === 0) {
-                new Notice('Please select some text to clean up');
-                return;
-            }
-
             // Validate text selection before proceeding
             const validation = this.validateSelection(selectedText);
             if (!validation.isValid) {
