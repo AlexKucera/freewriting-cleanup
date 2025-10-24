@@ -77,10 +77,7 @@ export class ModelService {
 
         // If no API key, immediately return and cache fallback (no Notice needed)
         if (!this.anthropicClient.validateApiKey()) {
-            const fallback = this.getFallbackModels();
-            // Cache fallback models as ModelInfo for consistency
-            this.updateCache(fallback.map(f => this.toModelInfo(f)));
-            return fallback;
+            return this.cacheFallbackModels();
         }
 
         // Try to fetch from API
@@ -91,10 +88,7 @@ export class ModelService {
         } catch (error) {
             console.error('Failed to fetch models from API:', error);
             this.showThrottledErrorNotice();
-            const fallback = this.getFallbackModels();
-            // Cache fallback models as ModelInfo for consistency
-            this.updateCache(fallback.map(f => this.toModelInfo(f)));
-            return fallback;
+            return this.cacheFallbackModels();
         }
     }
 
@@ -110,10 +104,7 @@ export class ModelService {
     async refreshModels(): Promise<ModelOption[]> {
         // If no API key, immediately return and cache fallback
         if (!this.anthropicClient.validateApiKey()) {
-            const fallback = this.getFallbackModels();
-            // Cache fallback models as ModelInfo for consistency
-            this.updateCache(fallback.map(f => this.toModelInfo(f)));
-            return fallback;
+            return this.cacheFallbackModels();
         }
 
         try {
@@ -123,10 +114,7 @@ export class ModelService {
         } catch (error) {
             console.error('Failed to refresh models from API:', error);
             this.showThrottledErrorNotice();
-            const fallback = this.getFallbackModels();
-            // Cache fallback models as ModelInfo for consistency
-            this.updateCache(fallback.map(f => this.toModelInfo(f)));
-            return fallback;
+            return this.cacheFallbackModels();
         }
     }
 
@@ -174,6 +162,21 @@ export class ModelService {
     }
 
     // MARK: - Private Methods
+
+    /**
+     * Caches fallback models as ModelInfo for consistency
+     *
+     * Helper that retrieves fallback models and updates the cache with them
+     * converted to ModelInfo format. This consolidates the common pattern of
+     * falling back to hardcoded models when the API is unavailable.
+     *
+     * @returns Array of fallback model options
+     */
+    private cacheFallbackModels(): ModelOption[] {
+        const fallback = this.getFallbackModels();
+        this.updateCache(fallback.map(f => this.toModelInfo(f)));
+        return fallback;
+    }
 
     /**
      * Shows throttled error notice for API failures
