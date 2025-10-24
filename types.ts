@@ -154,12 +154,12 @@ export interface ModelInfo {
 export interface ModelsListResponse {
     /** Array of model information */
     data: ModelInfo[];
-    /** ID of first model in list */
-    first_id: string;
+    /** ID of first model in list (null when data is empty) */
+    first_id: string | null;
     /** Whether more models are available */
     has_more: boolean;
-    /** ID of last model in list */
-    last_id: string;
+    /** ID of last model in list (null when data is empty) */
+    last_id: string | null;
 }
 
 /**
