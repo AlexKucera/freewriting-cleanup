@@ -77,9 +77,9 @@ export class CleanupCommand {
                 if (error instanceof ApiKeyError) {
                     new Notice('API key error. Please check your settings.');
                 } else if (error instanceof TextTooLongError) {
-                    new Notice('Text is too long for processing.');
+                    new Notice(error.message);
                 } else if (error instanceof ServiceUnavailableError) {
-                    new Notice('Service temporarily unavailable. Please try again.');
+                    new Notice(error.message);
                 } else if (error instanceof Error) {
                     new Notice(`Cleanup failed: ${error.message}`);
                 } else {
