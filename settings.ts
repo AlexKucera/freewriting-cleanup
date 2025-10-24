@@ -235,7 +235,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
 
         const limits = usageDiv.createEl('p');
         limits.createEl('strong', { text: 'Limits: ' });
-        limits.appendText(`Maximum ${ANTHROPIC_LIMITS.MAX_CHARACTERS.toLocaleString()} characters per cleanup (~${Math.floor(ANTHROPIC_LIMITS.MAX_TOKENS / 4).toLocaleString()} words estimated)`);
+        limits.appendText(`Maximum ${ANTHROPIC_LIMITS.MAX_TOKENS.toLocaleString()} tokens per cleanup (~${ANTHROPIC_LIMITS.MAX_CHARACTERS.toLocaleString()} characters, varies by language)`);
 
         const format = usageDiv.createEl('p');
         format.createEl('strong', { text: 'Format: ' });

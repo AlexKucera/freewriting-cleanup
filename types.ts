@@ -231,10 +231,24 @@ export const COMMENTARY_PRESETS: Record<Exclude<CommentaryStyle, 'custom'>, stri
  * Used for validation before making API calls.
  */
 export const ANTHROPIC_LIMITS = {
-    /** Maximum input tokens */
+    /** Maximum input tokens allowed by Claude API */
     MAX_TOKENS: 200000,
-    /** Maximum input characters */
-    MAX_CHARACTERS: 680000,
-    /** Default maximum output tokens per request */
-    DEFAULT_MAX_OUTPUT_TOKENS: 4000
+    /**
+     * Approximate maximum input characters
+     *
+     * Character count is approximate and depends on tokenization.
+     * Uses rough estimate of ≈ 4 characters per token, which varies by language
+     * and text structure. Actual token count may differ from this estimation.
+     */
+    MAX_CHARACTERS: 800000, // Derived from MAX_TOKENS * 4 (conservative estimate)
+    /**
+     * Default maximum output tokens per request
+     *
+     * Set to 8192 which works for most current Claude models:
+     * - Claude 3 Haiku: 4096 tokens (will be capped by API)
+     * - Claude 3.5 Sonnet: 8192 tokens
+     * - Claude 3.5 Haiku: 8192 tokens
+     * - Future models may support higher limits
+     */
+    DEFAULT_MAX_OUTPUT_TOKENS: 8192
 } as const;
