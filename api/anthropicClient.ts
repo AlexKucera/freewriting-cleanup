@@ -208,11 +208,11 @@ You MUST use exactly these markers. Do not deviate from this format.`;
                 lastError = error instanceof Error ? error : new Error('Unknown error');
 
                 // Don't retry client errors (ApiKeyError, ConfigurationError, ApiError with 4xx status)
-                // These errors are not transient and retrying won't help
+                // Exception: 429 (rate limit) is retryable as it's a transient condition
                 if (error instanceof ApiKeyError || error instanceof ConfigurationError) {
                     throw error;
                 }
-                if (error instanceof ApiError && error.status && error.status >= 400 && error.status < 500) {
+                if (error instanceof ApiError && error.status && error.status >= 400 && error.status < 500 && error.status !== 429) {
                     throw error;
                 }
 
@@ -326,6 +326,12 @@ You MUST use exactly these markers. Do not deviate from this format.`;
 
             if (response.status < 200 || response.status >= 300) {
                 const errorBody = response.text || 'Unknown error';
+                if (response.status === 401 || response.status === 403) {
+                    throw new ApiKeyError('API key is invalid or unauthorized.');
+                }
+                if (response.status === 429) {
+                    throw new ServiceUnavailableError('Rate limited by API. Please retry shortly.');
+                }
                 throw new ApiError(`API request failed (${response.status}): ${errorBody}`, response.status, errorBody);
             }
 
@@ -341,11 +347,12 @@ You MUST use exactly these markers. Do not deviate from this format.`;
     /**
      * Extracts text content from an Anthropic API response
      *
-     * Safely extracts the text content from the first message in the response,
-     * with validation to ensure content exists and is not empty.
+     * Safely extracts and concatenates all text blocks from the response.
+     * Anthropic can return multiple text blocks; this ensures we capture
+     * all content rather than just the first block.
      *
      * @param response - The API response object
-     * @returns Trimmed text content from the response
+     * @returns Trimmed text content from all response blocks
      * @throws Error if response has no content or empty text
      */
     private extractTextFromResponse(response: AnthropicResponse): string {
@@ -353,12 +360,12 @@ You MUST use exactly these markers. Do not deviate from this format.`;
             throw new InvalidResponseError('No content received from API');
         }
 
-        const text = response.content[0].text;
-        if (!text || text.trim().length === 0) {
+        const text = response.content.map(c => c.text ?? '').join('').trim();
+        if (!text) {
             throw new InvalidResponseError('Empty response from API');
         }
 
-        return text.trim();
+        return text;
     }
 
     /**
