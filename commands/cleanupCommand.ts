@@ -81,10 +81,14 @@ export class CleanupCommand {
                     new Notice('API key error. Please check your settings.');
                 } else if (error instanceof TextTooLongError) {
                     new Notice(error.message);
-                } else if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
-                    new Notice('API key was rejected by the server. Please verify your key.');
-                } else if (error instanceof ApiError && error.status === 429) {
-                    new Notice('Rate limited by API. Please wait and try again.');
+                } else if (error instanceof ApiError) {
+                    if (error.status === 401 || error.status === 403) {
+                        new Notice('API key was rejected by the server. Please verify your key.');
+                    } else if (error.status === 429) {
+                        new Notice('Rate limited by API. Please wait and try again.');
+                    } else {
+                        new Notice(`API error (${error.status}): ${error.message}`);
+                    }
                 } else if (error instanceof ServiceUnavailableError) {
                     new Notice(error.message);
                 } else if (error instanceof InvalidResponseError) {
