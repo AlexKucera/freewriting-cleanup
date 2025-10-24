@@ -158,14 +158,14 @@ export class ModelService {
 
     /**
      * Format ModelInfo array to ModelOption array for dropdown
-     * Uses display_name if available, otherwise falls back to id
+     * Uses display_name from API for user-friendly model names
      * Sorted by displayName for consistent UX across cache/API ordering
      */
     private formatModels(models: ModelInfo[]): ModelOption[] {
         return models
             .map(model => ({
                 id: model.id,
-                displayName: model.display_name || model.id
+                displayName: model.display_name
             }))
             .sort((a, b) => a.displayName.localeCompare(b.displayName));
     }

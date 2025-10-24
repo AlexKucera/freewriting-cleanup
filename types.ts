@@ -63,7 +63,7 @@ export interface CleanupResult {
 
 export interface ModelInfo {
     id: string;
-    display_name?: string;
+    display_name: string;
     created_at: string;
     type: string;
 }
