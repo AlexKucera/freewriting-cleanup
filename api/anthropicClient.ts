@@ -189,11 +189,13 @@ You MUST use exactly these markers. Do not deviate from this format.`;
      * Makes an API request with automatic retry logic
      *
      * Retries failed requests up to MAX_RETRIES times with exponential backoff.
-     * This implementation makes the API calls more resilient to transient failures.
+     * Only retries transient failures (network errors, 5xx server errors).
+     * Client errors (4xx, configuration errors, API key errors) fail immediately
+     * since retrying won't help and wastes time and API quota.
      *
      * @param request - The Anthropic API request to send
      * @returns The API response
-     * @throws Error if all retry attempts fail
+     * @throws Error if all retry attempts fail or on non-retryable errors
      */
     private async makeRequestWithRetry(request: AnthropicRequest): Promise<AnthropicResponse> {
         let lastError: Error = new Error('No attempts made');
@@ -204,6 +206,15 @@ You MUST use exactly these markers. Do not deviate from this format.`;
                 return response;
             } catch (error) {
                 lastError = error instanceof Error ? error : new Error('Unknown error');
+
+                // Don't retry client errors (ApiKeyError, ConfigurationError, ApiError with 4xx status)
+                // These errors are not transient and retrying won't help
+                if (error instanceof ApiKeyError || error instanceof ConfigurationError) {
+                    throw error;
+                }
+                if (error instanceof ApiError && error.status && error.status >= 400 && error.status < 500) {
+                    throw error;
+                }
 
                 if (attempt < this.MAX_RETRIES) {
                     const delay = this.RETRY_DELAY_BASE * Math.pow(2, attempt - 1); // Exponential backoff
