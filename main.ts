@@ -65,13 +65,18 @@ export default class FreewritingCleanupPlugin extends Plugin {
      * Loads plugin settings from Obsidian storage
      *
      * Merges stored settings with defaults to ensure all required fields exist.
+     * Excludes modelCache from settings object to keep types clean.
      * Returns the raw data for reuse in cache loading.
      *
      * @returns Raw plugin data including settings and optional cache, or null if no data exists
      */
     async loadSettings(): Promise<FreewritingCleanupData | null> {
         const data = await this.loadData() as FreewritingCleanupData | null;
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+        const { modelCache, ...persisted } = data ?? {};
+        this.settings = {
+            ...DEFAULT_SETTINGS,
+            ...(persisted as Partial<FreewritingCleanupSettings>)
+        };
         return data;
     }
 
@@ -101,11 +106,12 @@ export default class FreewritingCleanupPlugin extends Plugin {
      * Registers the cleanup command with Obsidian
      *
      * Creates the "Clean up text" command with editor callback that executes
-     * the cleanup operation on selected text.
+     * the cleanup operation on selected text. Command ID is prefixed with plugin
+     * ID to avoid future collisions and maintain stability post-release.
      */
     private registerCommand() {
         this.addCommand({
-            id: 'cleanup-text',
+            id: 'freewriting-cleanup-cleanup-text',
             name: 'Clean up text',
             editorCallback: async (editor: Editor, view: MarkdownView) => {
                 await this.executeCleanupCommand(editor, view);
