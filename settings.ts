@@ -261,15 +261,22 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
             if (this.modelDropdown) {
                 this.populateModelDropdown(this.modelDropdown);
 
-                // Restore selected model if it still exists
+                // Restore selected model if it still exists, otherwise use first available
                 const currentModel = this.plugin.settings.model;
                 const modelExists = this.availableModels.some(m => m.id === currentModel);
+
                 if (modelExists) {
                     this.modelDropdown.setValue(currentModel);
+                } else if (this.availableModels.length > 0) {
+                    // Model no longer available - update to first available model
+                    const newModel = this.availableModels[0].id;
+                    this.plugin.settings.model = newModel;
+                    this.modelDropdown.setValue(newModel);
+                    console.log(`Model '${currentModel}' no longer available, switched to '${newModel}'`);
                 }
             }
 
-            // Save updated cache
+            // Save updated cache and any model changes
             await this.plugin.saveSettings();
         } catch (error) {
             console.error('Error refreshing models:', error);
