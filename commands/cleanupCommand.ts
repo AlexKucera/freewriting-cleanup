@@ -3,7 +3,7 @@
 
 import { Editor, MarkdownView, Notice } from 'obsidian';
 import { CleanupService } from '../services/cleanupService';
-import { FreewritingCleanupSettings } from '../types';
+import { FreewritingCleanupSettings, ANTHROPIC_LIMITS } from '../types';
 
 /**
  * Command handler for freewriting cleanup operations
@@ -34,10 +34,10 @@ export class CleanupCommand {
      * notice during processing and error notices if operation fails.
      *
      * @param editor - Obsidian editor instance
-     * @param view - Current markdown view
+     * @param _view - Current markdown view (unused but required by editorCallback signature)
      * @param settings - Plugin settings for cleanup configuration
      */
-    async execute(editor: Editor, view: MarkdownView, settings: FreewritingCleanupSettings): Promise<void> {
+    async execute(editor: Editor, _view: MarkdownView, settings: FreewritingCleanupSettings): Promise<void> {
         try {
             // Get selected text
             const selectedText = editor.getSelection();
@@ -55,7 +55,7 @@ export class CleanupCommand {
             }
 
             // Show loading notice
-            const loadingNotice = new Notice('Cleaning up text...', 0); // 0 = persistent
+            const loadingNotice = new Notice('Cleaning up text...', 0); // persistent; hide in finally
 
             try {
                 // Process the text
@@ -76,14 +76,7 @@ export class CleanupCommand {
                 // Move to end of current line and insert new content
                 editor.setCursor(insertPosition);
                 editor.replaceRange(formattedResult, insertPosition);
-
-                // Clear the loading notice
-                loadingNotice.hide();
-
             } catch (error) {
-                // Clear loading notice
-                loadingNotice.hide();
-
                 // Handle specific error types
                 if (error instanceof Error) {
                     if (error.message.includes('API key')) {
@@ -100,7 +93,8 @@ export class CleanupCommand {
                 }
 
                 console.error('Cleanup command error:', error);
-                throw error;
+            } finally {
+                loadingNotice.hide();
             }
 
         } catch (error) {
@@ -155,14 +149,14 @@ export class CleanupCommand {
         if (!limits.withinCharacterLimit) {
             return {
                 isValid: false,
-                error: `Text too long: ${limits.characterCount} characters (max: 680,000)`
+                error: `Text too long: ${limits.characterCount.toLocaleString()} characters (max: ${ANTHROPIC_LIMITS.MAX_CHARACTERS.toLocaleString()})`
             };
         }
 
         if (!limits.withinTokenLimit) {
             return {
                 isValid: false,
-                error: `Text too long: ~${limits.estimatedTokenCount} tokens (max: 200,000)`
+                error: `Text too long: ~${limits.estimatedTokenCount.toLocaleString()} tokens (max: ${ANTHROPIC_LIMITS.MAX_TOKENS.toLocaleString()})`
             };
         }
 
