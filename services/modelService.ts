@@ -27,6 +27,8 @@ export class ModelService {
     private anthropicClient: AnthropicClient;
     private modelCache: ModelCache | null = null;
     private readonly CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+    private lastErrorNoticeTime = 0;
+    private readonly ERROR_NOTICE_THROTTLE_MS = 60 * 1000; // 1 minute
 
     /**
      * Creates a new model service
@@ -35,6 +37,24 @@ export class ModelService {
      */
     constructor(anthropicClient: AnthropicClient) {
         this.anthropicClient = anthropicClient;
+    }
+
+    /**
+     * Converts ModelOption to ModelInfo format
+     *
+     * Helper to maintain consistent shape when caching fallback models.
+     * Keeps the mapping logic in one place for easier maintenance.
+     *
+     * @param opt - Model option to convert
+     * @returns ModelInfo with empty metadata fields
+     */
+    private toModelInfo(opt: ModelOption): ModelInfo {
+        return {
+            id: opt.id,
+            display_name: opt.displayName,
+            created_at: '',
+            type: 'model'
+        };
     }
 
     // MARK: - Public Methods
@@ -59,12 +79,7 @@ export class ModelService {
         if (!this.anthropicClient.validateApiKey()) {
             const fallback = this.getFallbackModels();
             // Cache fallback models as ModelInfo for consistency
-            this.updateCache(fallback.map(f => ({
-                id: f.id,
-                display_name: f.displayName,
-                created_at: '',
-                type: 'model'
-            } as ModelInfo)));
+            this.updateCache(fallback.map(f => this.toModelInfo(f)));
             return fallback;
         }
 
@@ -75,15 +90,10 @@ export class ModelService {
             return this.formatModels(response.data);
         } catch (error) {
             console.error('Failed to fetch models from API:', error);
-            new Notice('Fetching current models failed. Using hardcoded fallback list.');
+            this.showThrottledErrorNotice();
             const fallback = this.getFallbackModels();
             // Cache fallback models as ModelInfo for consistency
-            this.updateCache(fallback.map(f => ({
-                id: f.id,
-                display_name: f.displayName,
-                created_at: '',
-                type: 'model'
-            } as ModelInfo)));
+            this.updateCache(fallback.map(f => this.toModelInfo(f)));
             return fallback;
         }
     }
@@ -102,12 +112,7 @@ export class ModelService {
         if (!this.anthropicClient.validateApiKey()) {
             const fallback = this.getFallbackModels();
             // Cache fallback models as ModelInfo for consistency
-            this.updateCache(fallback.map(f => ({
-                id: f.id,
-                display_name: f.displayName,
-                created_at: '',
-                type: 'model'
-            } as ModelInfo)));
+            this.updateCache(fallback.map(f => this.toModelInfo(f)));
             return fallback;
         }
 
@@ -117,15 +122,10 @@ export class ModelService {
             return this.formatModels(response.data);
         } catch (error) {
             console.error('Failed to refresh models from API:', error);
-            new Notice('Fetching current models failed. Using hardcoded fallback list.');
+            this.showThrottledErrorNotice();
             const fallback = this.getFallbackModels();
             // Cache fallback models as ModelInfo for consistency
-            this.updateCache(fallback.map(f => ({
-                id: f.id,
-                display_name: f.displayName,
-                created_at: '',
-                type: 'model'
-            } as ModelInfo)));
+            this.updateCache(fallback.map(f => this.toModelInfo(f)));
             return fallback;
         }
     }
@@ -174,6 +174,20 @@ export class ModelService {
     }
 
     // MARK: - Private Methods
+
+    /**
+     * Shows throttled error notice for API failures
+     *
+     * Prevents spamming user with error notices when API is persistently down.
+     * Only shows notice once per minute to avoid notification fatigue.
+     */
+    private showThrottledErrorNotice(): void {
+        const now = Date.now();
+        if (now - this.lastErrorNoticeTime > this.ERROR_NOTICE_THROTTLE_MS) {
+            new Notice('Fetching current models failed. Using hardcoded fallback list.');
+            this.lastErrorNoticeTime = now;
+        }
+    }
 
     /**
      * Checks if the current cache is still valid
