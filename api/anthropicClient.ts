@@ -67,7 +67,7 @@ export class AnthropicClient {
             if (commentaryStyle === 'custom' && customCommentaryPrompt) {
                 commentaryPrompt = customCommentaryPrompt;
             } else if (commentaryStyle === 'custom') {
-                throw new Error('Custom commentary prompt is required when using custom style');
+                throw new Error('Custom commentary style requires a custom prompt. Please provide customCommentaryPrompt.');
             } else {
                 commentaryPrompt = COMMENTARY_PRESETS[commentaryStyle as Exclude<CommentaryStyle, 'custom'>];
             }
