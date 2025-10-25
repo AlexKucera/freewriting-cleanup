@@ -3,26 +3,45 @@
 
 import { Editor, MarkdownView, Notice } from 'obsidian';
 import { CleanupService } from '../services/cleanupService';
-import { FreewritingCleanupSettings } from '../types';
+import { FreewritingCleanupSettings, ANTHROPIC_LIMITS } from '../types';
+import { ApiKeyError, TextTooLongError, ServiceUnavailableError, ApiError, InvalidResponseError, NetworkError } from '../errors';
 
+/**
+ * Command handler for freewriting cleanup operations
+ *
+ * Coordinates editor interaction, text selection validation, cleanup execution,
+ * and result insertion. Provides user feedback through notices for all stages
+ * of the cleanup process.
+ */
 export class CleanupCommand {
     private cleanupService: CleanupService;
 
+    /**
+     * Creates a new cleanup command handler
+     *
+     * @param cleanupService - Service for performing text cleanup
+     */
     constructor(cleanupService: CleanupService) {
         this.cleanupService = cleanupService;
     }
 
     // MARK: - Public Methods
 
-    async execute(editor: Editor, view: MarkdownView, settings: FreewritingCleanupSettings): Promise<void> {
+    /**
+     * Executes the cleanup command on selected text
+     *
+     * Gets selected text from editor, validates it, sends to cleanup service,
+     * and inserts formatted result below the selection. Shows persistent loading
+     * notice during processing and error notices if operation fails.
+     *
+     * @param editor - Obsidian editor instance
+     * @param _view - Current markdown view (unused but required by editorCallback signature)
+     * @param settings - Plugin settings for cleanup configuration
+     */
+    async execute(editor: Editor, _view: MarkdownView, settings: FreewritingCleanupSettings): Promise<void> {
         try {
             // Get selected text
             const selectedText = editor.getSelection();
-
-            if (!selectedText || selectedText.trim().length === 0) {
-                new Notice('Please select some text to clean up');
-                return;
-            }
 
             // Validate text selection before proceeding
             const validation = this.validateSelection(selectedText);
@@ -32,7 +51,7 @@ export class CleanupCommand {
             }
 
             // Show loading notice
-            const loadingNotice = new Notice('Cleaning up text...', 0); // 0 = persistent
+            const loadingNotice = new Notice('Cleaning up text...', 0); // persistent; hide in finally
 
             try {
                 // Process the text
@@ -54,30 +73,37 @@ export class CleanupCommand {
                 editor.setCursor(insertPosition);
                 editor.replaceRange(formattedResult, insertPosition);
 
-                // Clear the loading notice
-                loadingNotice.hide();
-
+                // Show success notice with duration (loadingNotice will be hidden in finally)
+                new Notice(`Text cleanup completed in ${(result.duration / 1000).toFixed(1)}s`);
             } catch (error) {
-                // Clear loading notice
-                loadingNotice.hide();
-
-                // Handle specific error types
-                if (error instanceof Error) {
-                    if (error.message.includes('API key')) {
-                        new Notice('API key error. Please check your settings.');
-                    } else if (error.message.includes('too long')) {
-                        new Notice('Text is too long for processing.');
-                    } else if (error.message.includes('Failed after')) {
-                        new Notice('Service temporarily unavailable. Please try again.');
+                // Handle specific error types using instanceof checks
+                if (error instanceof ApiKeyError) {
+                    new Notice('API key error. Please check your settings.');
+                } else if (error instanceof TextTooLongError) {
+                    new Notice(error.message);
+                } else if (error instanceof ApiError) {
+                    if (error.status === 401 || error.status === 403) {
+                        new Notice('API key was rejected by the server. Please verify your key.');
+                    } else if (error.status === 429) {
+                        new Notice('Rate limited by API. Please wait and try again.');
                     } else {
-                        new Notice(`Cleanup failed: ${error.message}`);
+                        new Notice(`API error (${error.status}): ${error.message}`);
                     }
+                } else if (error instanceof ServiceUnavailableError) {
+                    new Notice(error.message);
+                } else if (error instanceof InvalidResponseError) {
+                    new Notice('Received an unexpected response from Claude. Please try again.');
+                } else if (error instanceof NetworkError) {
+                    new Notice('Network error. Check your connection and try again.');
+                } else if (error instanceof Error) {
+                    new Notice(`Cleanup failed: ${error.message}`);
                 } else {
                     new Notice('An unexpected error occurred during cleanup.');
                 }
 
                 console.error('Cleanup command error:', error);
-                throw error;
+            } finally {
+                loadingNotice.hide();
             }
 
         } catch (error) {
@@ -85,23 +111,20 @@ export class CleanupCommand {
         }
     }
 
-    // MARK: - Helper Methods
-
-
-    private formatSelectedTextInfo(text: string): string {
-        const characterCount = text.length;
-        const estimatedTokens = CleanupService.estimateTokenCount(text);
-        const lines = text.split('\n').length;
-
-        return `Selected: ${characterCount} characters, ${lines} lines, ~${estimatedTokens} tokens`;
-    }
-
     // MARK: - Validation Methods
 
+    /**
+     * Validates text selection against API limits
+     *
+     * Checks that text is non-empty and within both character and token limits.
+     * Returns detailed validation result with error messages.
+     *
+     * @param selectedText - Text to validate
+     * @returns Validation result with status and optional error
+     */
     validateSelection(selectedText: string): {
         isValid: boolean;
         error?: string;
-        info?: string;
     } {
         if (!selectedText || selectedText.trim().length === 0) {
             return {
@@ -115,20 +138,19 @@ export class CleanupCommand {
         if (!limits.withinCharacterLimit) {
             return {
                 isValid: false,
-                error: `Text too long: ${limits.characterCount} characters (max: 680,000)`
+                error: `Text too long: ${limits.characterCount.toLocaleString()} characters (max: ${ANTHROPIC_LIMITS.MAX_CHARACTERS.toLocaleString()})`
             };
         }
 
         if (!limits.withinTokenLimit) {
             return {
                 isValid: false,
-                error: `Text too long: ~${limits.estimatedTokenCount} tokens (max: 200,000)`
+                error: `Text too long: ~${limits.estimatedTokenCount.toLocaleString()} tokens (max: ${ANTHROPIC_LIMITS.MAX_TOKENS.toLocaleString()})`
             };
         }
 
         return {
-            isValid: true,
-            info: this.formatSelectedTextInfo(selectedText)
+            isValid: true
         };
     }
 }

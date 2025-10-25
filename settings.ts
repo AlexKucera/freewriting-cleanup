@@ -3,9 +3,15 @@
 
 import { App, ButtonComponent, DropdownComponent, Modal, Notice, PluginSettingTab, Setting } from 'obsidian';
 import FreewritingCleanupPlugin from './main';
-import { FreewritingCleanupSettings, COMMENTARY_STYLES, CommentaryStyle, COMMENTARY_PRESETS } from './types';
+import { FreewritingCleanupSettings, COMMENTARY_STYLES, CommentaryStyle, COMMENTARY_PRESETS, ANTHROPIC_LIMITS } from './types';
 import { ModelOption } from './services/modelService';
 
+/**
+ * Default plugin settings
+ *
+ * Provides sensible defaults for all settings when plugin is first installed
+ * or when settings are reset.
+ */
 export const DEFAULT_SETTINGS: FreewritingCleanupSettings = {
     apiKey: '',
     model: 'claude-3-5-haiku-latest' as const,
@@ -15,16 +21,51 @@ export const DEFAULT_SETTINGS: FreewritingCleanupSettings = {
     customCommentaryPrompt: 'Provide thoughtful feedback on this freewriting session, considering the writer\'s flow of thoughts and ideas.'
 };
 
+/**
+ * Settings tab for the Freewriting Cleanup plugin
+ *
+ * Provides UI for configuring API key, model selection, cleanup prompts,
+ * and commentary options. Handles model list loading, API key testing,
+ * and settings reset functionality.
+ */
 export class FreewritingCleanupSettingTab extends PluginSettingTab {
     plugin: FreewritingCleanupPlugin;
     private modelDropdown: DropdownComponent | null = null;
     private availableModels: ModelOption[] = [];
+    private saveDebounce: number | null = null;
 
+    /**
+     * Creates a new settings tab
+     *
+     * @param app - Obsidian app instance
+     * @param plugin - Plugin instance
+     */
     constructor(app: App, plugin: FreewritingCleanupPlugin) {
         super(app, plugin);
         this.plugin = plugin;
     }
 
+    /**
+     * Schedules a debounced save to reduce disk IO
+     *
+     * Debounces save operations to prevent excessive writes during rapid
+     * user input (e.g., typing in text fields). Uses 300ms delay.
+     */
+    private scheduleSave(): void {
+        if (this.saveDebounce !== null) window.clearTimeout(this.saveDebounce);
+        this.saveDebounce = window.setTimeout(() => {
+            this.plugin.saveSettings();
+            this.saveDebounce = null;
+        }, 300);
+    }
+
+    /**
+     * Renders the settings UI
+     *
+     * Creates all settings controls including API configuration, model selection,
+     * cleanup prompts, commentary options, and usage information. Loads models
+     * asynchronously in the background.
+     */
     display(): void {
         const { containerEl } = this;
         containerEl.empty();
@@ -55,7 +96,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.apiKey)
                 .onChange(async (value) => {
                     this.plugin.settings.apiKey = value;
-                    await this.plugin.saveSettings();
+                    this.scheduleSave();
                     this.plugin.cleanupService.updateApiKey(value);
 
                     // Refresh when key is entered; revert to fallback when cleared
@@ -109,7 +150,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.cleanupPrompt)
                     .onChange(async (value) => {
                         this.plugin.settings.cleanupPrompt = value;
-                        await this.plugin.saveSettings();
+                        this.scheduleSave();
                     });
 
                 // Style the textarea
@@ -128,7 +169,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.enableCommentary)
                 .onChange(async (value) => {
                     this.plugin.settings.enableCommentary = value;
-                    await this.plugin.saveSettings();
+                    this.scheduleSave();
                     this.display(); // Refresh to show/hide commentary options
                 }));
 
@@ -145,7 +186,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
                         .setValue(this.plugin.settings.commentaryStyle)
                         .onChange(async (value) => {
                             this.plugin.settings.commentaryStyle = value as CommentaryStyle;
-                            await this.plugin.saveSettings();
+                            this.scheduleSave();
                             this.display(); // Refresh to show/hide custom prompt
                         });
                 });
@@ -160,7 +201,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
                             .setValue(this.plugin.settings.customCommentaryPrompt)
                             .onChange(async (value) => {
                                 this.plugin.settings.customCommentaryPrompt = value;
-                                await this.plugin.saveSettings();
+                                this.scheduleSave();
                             });
 
                         // Style the textarea
@@ -189,12 +230,12 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
 
         const list = usageDiv.createEl('ol');
         list.createEl('li', { text: 'Select the text you want to clean up in any note' });
-        list.createEl('li', { text: 'Run the "Clean Up Freewriting" command (Ctrl/Cmd+P)' });
+        list.createEl('li', { text: 'Run the "Clean up text" command (Ctrl/Cmd+P)' });
         list.createEl('li', { text: 'The cleaned text will appear below your original text' });
 
         const limits = usageDiv.createEl('p');
         limits.createEl('strong', { text: 'Limits: ' });
-        limits.appendText('Maximum 680,000 characters (~150,000 words) per cleanup');
+        limits.appendText(`Maximum ${ANTHROPIC_LIMITS.MAX_TOKENS.toLocaleString()} tokens per cleanup (~${ANTHROPIC_LIMITS.MAX_CHARACTERS.toLocaleString()} characters, varies by language)`);
 
         const format = usageDiv.createEl('p');
         format.createEl('strong', { text: 'Format: ' });
@@ -217,6 +258,12 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
 
     // MARK: - Model Loading
 
+    /**
+     * Loads available models from model service
+     *
+     * Fetches current model list (from cache or API) and updates the
+     * availableModels array for dropdown population.
+     */
     private async loadModels(): Promise<void> {
         try {
             this.availableModels = await this.plugin.modelService.getAvailableModels();
@@ -226,6 +273,14 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
         }
     }
 
+    /**
+     * Populates the model dropdown with available options
+     *
+     * Updates dropdown with current model list or shows loading state.
+     * Disables dropdown if no models are available yet.
+     *
+     * @param dropdown - Dropdown component to populate
+     */
     private populateModelDropdown(dropdown: DropdownComponent): void {
         if (this.availableModels.length === 0) {
             // No models available yet, disable dropdown
@@ -245,6 +300,13 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
         dropdown.setDisabled(false);
     }
 
+    /**
+     * Refreshes model list from API
+     *
+     * Forces a fresh fetch of models, updates the dropdown UI, and handles
+     * the case where the currently selected model is no longer available.
+     * Shows loading state during refresh.
+     */
     private async refreshModels(): Promise<void> {
         try {
             // Disable dropdown during refresh
@@ -286,6 +348,14 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
 
     // MARK: - Private Methods
 
+    /**
+     * Tests the API key connection
+     *
+     * Makes a test API request and shows user feedback via notices.
+     * Updates button state during testing.
+     *
+     * @param button - Button component that triggered the test
+     */
     private async testApiKey(button: ButtonComponent): Promise<void> {
         const originalText = button.buttonEl.textContent;
         button.setButtonText('Testing...');
@@ -311,6 +381,12 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
         }
     }
 
+    /**
+     * Resets settings to defaults
+     *
+     * Shows confirmation dialog and resets all settings except API key to
+     * their default values. Refreshes the settings UI after reset.
+     */
     private async resetSettings(): Promise<void> {
         // Confirm the reset
         const confirmed = await this.showConfirmDialog('Reset Settings',
@@ -331,6 +407,15 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
         }
     }
 
+    /**
+     * Shows a confirmation dialog
+     *
+     * Creates a modal dialog asking user to confirm an action.
+     *
+     * @param title - Dialog title
+     * @param message - Confirmation message
+     * @returns Promise that resolves to true if user confirmed, false if cancelled
+     */
     private async showConfirmDialog(title: string, message: string): Promise<boolean> {
         return new Promise((resolve) => {
             const modal = new ConfirmModal(this.app, title, message, (result) => {
@@ -341,12 +426,25 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
     }
 }
 
-// Confirmation modal using Obsidian's Modal class for consistent styling and accessibility
+/**
+ * Confirmation modal for destructive actions
+ *
+ * Uses Obsidian's Modal class for consistent styling and accessibility.
+ * Provides Cancel and Confirm buttons with appropriate focus handling.
+ */
 class ConfirmModal extends Modal {
     private title: string;
     private message: string;
     private callback: (result: boolean) => void;
 
+    /**
+     * Creates a new confirmation modal
+     *
+     * @param app - Obsidian app instance
+     * @param title - Modal title
+     * @param message - Confirmation message
+     * @param callback - Callback invoked with true (confirmed) or false (cancelled)
+     */
     constructor(app: App, title: string, message: string, callback: (result: boolean) => void) {
         super(app);
         this.title = title;
@@ -354,6 +452,12 @@ class ConfirmModal extends Modal {
         this.callback = callback;
     }
 
+    /**
+     * Renders the modal content
+     *
+     * Creates title, message, and Cancel/Confirm buttons. Sets focus to
+     * Confirm button for keyboard accessibility.
+     */
     onOpen(): void {
         const { contentEl } = this;
 
@@ -380,6 +484,9 @@ class ConfirmModal extends Modal {
         confirmButton.focus();
     }
 
+    /**
+     * Cleans up modal content when closed
+     */
     onClose(): void {
         const { contentEl } = this;
         contentEl.empty();
