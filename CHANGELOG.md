@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-10-25
+
+### Added
+- Dynamic model fetching from Anthropic API with automatic fallback and caching
+- Token usage tracking for text cleanup requests
+- Debounce mechanism for settings save operations
+- Error notice throttling for improved user experience
+- Validation for custom commentary style
+
+### Changed
+- Improved API error handling with detailed error messages and selective retries
+- Enhanced model loading in settings with fallback strategy
+- Optimized settings and model cache loading
+- Refactored Anthropic model type and list handling
+- Enforced display name requirement for model selection
+- Updated Anthropic API limits with detailed documentation
+- Simplified text selection validation method
+- Improved plugin settings loading and command registration
+- Enhanced code documentation and structure throughout plugin
+- Refactored confirmation modal with better Obsidian integration
+
+### Fixed
+- Removed duplicate error notification in cleanup service
+- Resolved potential null reference errors in settings
+- Handled model changes gracefully when current model becomes unavailable
+- Updated ModelsListResponse types to handle empty model lists
+- Corrected type definition for stop_sequence parameter
+- Improved custom commentary error message clarity
+- Removed unnecessary text selection validation check
+
 ## [1.0.2] - 2025-09-21
 
 ### Security
@@ -58,7 +88,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Settings Management**: Persistent settings with validation and testing capabilities
 - **Modular Architecture**: Clean separation of concerns across services, commands, and API layers
 
-[Unreleased]: https://github.com/alexanderkucera/obsidian-freewriting-cleanup/compare/1.0.2...HEAD
+[Unreleased]: https://github.com/alexanderkucera/obsidian-freewriting-cleanup/compare/1.1.0...HEAD
+[1.1.0]: https://github.com/alexanderkucera/obsidian-freewriting-cleanup/compare/1.0.2...1.1.0
 [1.0.2]: https://github.com/alexanderkucera/obsidian-freewriting-cleanup/compare/1.0.1...1.0.2
 [1.0.1]: https://github.com/alexanderkucera/obsidian-freewriting-cleanup/compare/1.0.0...1.0.1
 [1.0.0]: https://github.com/alexanderkucera/obsidian-freewriting-cleanup/releases/tag/1.0.0

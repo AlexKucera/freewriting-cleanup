@@ -1,6 +1,6 @@
 {
 	"name": "freewriting-cleanup",
-	"version": "1.0.2",
+	"version": "1.1.0",
 	"description": "Use AI to clean up your freewriting typos and create a proper paragraph.",
 	"main": "main.js",
 	"scripts": {
