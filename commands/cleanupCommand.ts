@@ -92,7 +92,7 @@ export class CleanupCommand {
                 } else if (error instanceof ServiceUnavailableError) {
                     new Notice(error.message);
                 } else if (error instanceof InvalidResponseError) {
-                    new Notice('Received an unexpected response from Claude. Please try again.');
+                    new Notice('Received an unexpected response from Claude. Please try again');
                 } else if (error instanceof NetworkError) {
                     new Notice('Network error. Check your connection and try again.');
                 } else if (error instanceof Error) {

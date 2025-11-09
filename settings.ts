@@ -70,7 +70,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
         const { containerEl } = this;
         containerEl.empty();
 
-        containerEl.createEl('h2', { text: 'Freewriting cleanup settings' });
+        new Setting(containerEl).setName('Freewriting cleanup settings').setHeading();
 
         // Load models asynchronously in the background
         this.loadModels()
@@ -92,7 +92,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
             .setName('Anthropic API key')
             .setDesc('Your Anthropic API key for Claude. Get one at https://console.anthropic.com/')
             .addText(text => text
-                .setPlaceholder('sk-ant-...')
+                .setPlaceholder('Enter API key')
                 .setValue(this.plugin.settings.apiKey)
                 .onChange(async (value) => {
                     this.plugin.settings.apiKey = value;
@@ -125,7 +125,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Claude model')
-            .setDesc('Which Claude model to use for text cleanup')
+            .setDesc('Claude model to use for text cleanup')
             .addDropdown(dropdown => {
                 this.modelDropdown = dropdown;
                 this.populateModelDropdown(dropdown);
@@ -143,7 +143,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Cleanup prompt')
-            .setDesc('Instructions for how Claude should clean up your freewriting text')
+            .setDesc('Instructions for how to clean up your freewriting text')
             .addTextArea(textArea => {
                 textArea
                     .setPlaceholder('Enter your cleanup instructions...')
