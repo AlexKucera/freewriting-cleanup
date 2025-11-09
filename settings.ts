@@ -70,8 +70,6 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
         const { containerEl } = this;
         containerEl.empty();
 
-        new Setting(containerEl).setName('Freewriting cleanup settings').setHeading();
-
         // Load models asynchronously in the background
         this.loadModels()
             .then(() => {
