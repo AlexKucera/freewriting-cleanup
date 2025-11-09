@@ -78,7 +78,7 @@ export class AnthropicClient {
             } else if (commentaryStyle === 'custom') {
                 throw new ConfigurationError('Custom commentary style requires a custom prompt. Please provide customCommentaryPrompt.');
             } else {
-                commentaryPrompt = COMMENTARY_PRESETS[commentaryStyle as Exclude<CommentaryStyle, 'custom'>];
+                commentaryPrompt = COMMENTARY_PRESETS[commentaryStyle];
             }
         }
 

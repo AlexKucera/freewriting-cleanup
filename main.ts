@@ -72,7 +72,7 @@ export default class FreewritingCleanupPlugin extends Plugin {
      */
     async loadSettings(): Promise<FreewritingCleanupData | null> {
         const data = await this.loadData() as FreewritingCleanupData | null;
-        const { modelCache, ...persisted } = data ?? {};
+        const { ...persisted } = data ?? {};
         this.settings = {
             ...DEFAULT_SETTINGS,
             ...(persisted as Partial<FreewritingCleanupSettings>)
@@ -111,7 +111,7 @@ export default class FreewritingCleanupPlugin extends Plugin {
      */
     private registerCommand() {
         this.addCommand({
-            id: 'freewriting-cleanup-cleanup-text',
+            id: 'cleanup-text',
             name: 'Clean up text',
             editorCallback: async (editor: Editor, view: MarkdownView) => {
                 await this.executeCleanupCommand(editor, view);

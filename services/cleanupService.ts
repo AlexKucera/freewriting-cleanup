@@ -1,7 +1,6 @@
 // ABOUTME: Service class for orchestrating freewriting text cleanup operations
 // ABOUTME: Handles validation, API coordination, and result formatting
 
-import { Notice } from 'obsidian';
 import { AnthropicClient } from '../api/anthropicClient';
 import { FreewritingCleanupSettings, CleanupResult, ANTHROPIC_LIMITS } from '../types';
 import { ApiKeyError, TextTooLongError } from '../errors';
@@ -64,36 +63,31 @@ export class CleanupService {
 
         const startTime = Date.now();
 
-        try {
-            const { cleanedText, commentary, usage } = await this.client.cleanupText(
-                text,
-                settings.model,
-                settings.cleanupPrompt,
-                settings.enableCommentary,
-                settings.commentaryStyle,
-                settings.customCommentaryPrompt
-            );
+        const { cleanedText, commentary, usage } = await this.client.cleanupText(
+            text,
+            settings.model,
+            settings.cleanupPrompt,
+            settings.enableCommentary,
+            settings.commentaryStyle,
+            settings.customCommentaryPrompt
+        );
 
-            const duration = Date.now() - startTime;
+        const duration = Date.now() - startTime;
 
-            const result: CleanupResult = {
-                originalText: text,
-                cleanedText,
-                commentary,
-                timestamp: new Date(),
-                model: settings.model,
-                tokensUsed: {
-                    input: usage?.input_tokens ?? 0,
-                    output: usage?.output_tokens ?? 0
-                },
-                duration
-            };
+        const result: CleanupResult = {
+            originalText: text,
+            cleanedText,
+            commentary,
+            timestamp: new Date(),
+            model: settings.model,
+            tokensUsed: {
+                input: usage?.input_tokens ?? 0,
+                output: usage?.output_tokens ?? 0
+            },
+            duration
+        };
 
-            return result;
-        } catch (error) {
-            // Let the command layer handle user feedback to avoid duplicate notices
-            throw error;
-        }
+        return result;
     }
 
     /**

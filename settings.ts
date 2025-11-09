@@ -54,7 +54,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
     private scheduleSave(): void {
         if (this.saveDebounce !== null) window.clearTimeout(this.saveDebounce);
         this.saveDebounce = window.setTimeout(() => {
-            this.plugin.saveSettings();
+            void this.plugin.saveSettings();
             this.saveDebounce = null;
         }, 300);
     }
@@ -70,7 +70,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
         const { containerEl } = this;
         containerEl.empty();
 
-        containerEl.createEl('h2', { text: 'Freewriting Cleanup Settings' });
+        containerEl.createEl('h2', { text: 'Freewriting cleanup settings' });
 
         // Load models asynchronously in the background
         this.loadModels()
@@ -86,10 +86,10 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
 
         // MARK: - API Configuration
 
-        containerEl.createEl('h3', { text: 'API Configuration' });
+        new Setting(containerEl).setName('API configuration').setHeading();
 
         new Setting(containerEl)
-            .setName('Anthropic API Key')
+            .setName('Anthropic API key')
             .setDesc('Your Anthropic API key for Claude. Get one at https://console.anthropic.com/')
             .addText(text => text
                 .setPlaceholder('sk-ant-...')
@@ -115,16 +115,16 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
             });
 
         new Setting(containerEl)
-            .setName('Test API Key')
+            .setName('Test API key')
             .setDesc('Test your API key to verify it works correctly')
             .addButton(button => button
-                .setButtonText('Test Connection')
+                .setButtonText('Test connection')
                 .onClick(async () => {
                     await this.testApiKey(button);
                 }));
 
         new Setting(containerEl)
-            .setName('Claude Model')
+            .setName('Claude model')
             .setDesc('Which Claude model to use for text cleanup')
             .addDropdown(dropdown => {
                 this.modelDropdown = dropdown;
@@ -139,16 +139,16 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
 
         // MARK: - Cleanup Configuration
 
-        containerEl.createEl('h3', { text: 'Cleanup Configuration' });
+        new Setting(containerEl).setName('Cleanup configuration').setHeading();
 
         new Setting(containerEl)
-            .setName('Cleanup Prompt')
+            .setName('Cleanup prompt')
             .setDesc('Instructions for how Claude should clean up your freewriting text')
             .addTextArea(textArea => {
                 textArea
                     .setPlaceholder('Enter your cleanup instructions...')
                     .setValue(this.plugin.settings.cleanupPrompt)
-                    .onChange(async (value) => {
+                    .onChange((value) => {
                         this.plugin.settings.cleanupPrompt = value;
                         this.scheduleSave();
                     });
@@ -160,14 +160,14 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
 
         // MARK: - Commentary Configuration
 
-        containerEl.createEl('h3', { text: 'AI Commentary' });
+        new Setting(containerEl).setName('AI commentary').setHeading();
 
         new Setting(containerEl)
             .setName('AI should comment on text')
             .setDesc('After cleaning up your text, AI will provide thoughtful commentary on your freewriting session')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableCommentary)
-                .onChange(async (value) => {
+                .onChange((value) => {
                     this.plugin.settings.enableCommentary = value;
                     this.scheduleSave();
                     this.display(); // Refresh to show/hide commentary options
@@ -175,7 +175,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
 
         if (this.plugin.settings.enableCommentary) {
             new Setting(containerEl)
-                .setName('Commentary Style')
+                .setName('Commentary style')
                 .setDesc('Choose the type of feedback AI should provide')
                 .addDropdown(dropdown => {
                     COMMENTARY_STYLES.forEach(style => {
@@ -184,7 +184,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
                     });
                     dropdown
                         .setValue(this.plugin.settings.commentaryStyle)
-                        .onChange(async (value) => {
+                        .onChange((value) => {
                             this.plugin.settings.commentaryStyle = value as CommentaryStyle;
                             this.scheduleSave();
                             this.display(); // Refresh to show/hide custom prompt
@@ -193,13 +193,13 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
 
             if (this.plugin.settings.commentaryStyle === 'custom') {
                 new Setting(containerEl)
-                    .setName('Custom Commentary Prompt')
+                    .setName('Custom commentary prompt')
                     .setDesc('Instructions for how AI should comment on your freewriting')
                     .addTextArea(textArea => {
                         textArea
                             .setPlaceholder('Enter your commentary instructions...')
                             .setValue(this.plugin.settings.customCommentaryPrompt)
-                            .onChange(async (value) => {
+                            .onChange((value) => {
                                 this.plugin.settings.customCommentaryPrompt = value;
                                 this.scheduleSave();
                             });
@@ -210,7 +210,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
                     });
             } else {
                 // Show the current preset for reference
-                const presetText = COMMENTARY_PRESETS[this.plugin.settings.commentaryStyle as Exclude<CommentaryStyle, 'custom'>];
+                const presetText = COMMENTARY_PRESETS[this.plugin.settings.commentaryStyle];
                 const descDiv = containerEl.createDiv({ cls: 'setting-item-description freewriting-cleanup-description' });
                 descDiv.empty();
                 descDiv.createEl('strong', { text: 'Selected style: ' });
@@ -220,7 +220,7 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
 
         // MARK: - Usage Information
 
-        containerEl.createEl('h3', { text: 'Usage Information' });
+        new Setting(containerEl).setName('Usage information').setHeading();
 
         const usageDiv = containerEl.createDiv();
         usageDiv.empty();
@@ -243,13 +243,13 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
 
         // MARK: - Reset Settings
 
-        containerEl.createEl('h3', { text: 'Reset' });
+        new Setting(containerEl).setName('Reset').setHeading();
 
         new Setting(containerEl)
-            .setName('Reset to Defaults')
+            .setName('Reset to defaults')
             .setDesc('Reset all settings to their default values')
             .addButton(button => button
-                .setButtonText('Reset Settings')
+                .setButtonText('Reset settings')
                 .setWarning()
                 .onClick(async () => {
                     await this.resetSettings();
@@ -334,7 +334,6 @@ export class FreewritingCleanupSettingTab extends PluginSettingTab {
                     const newModel = this.availableModels[0].id;
                     this.plugin.settings.model = newModel;
                     this.modelDropdown.setValue(newModel);
-                    console.log(`Model '${currentModel}' no longer available, switched to '${newModel}'`);
                 }
             }
 
